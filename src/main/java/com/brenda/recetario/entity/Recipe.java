@@ -1,10 +1,15 @@
-package com.brenda.recetario.model;
+package com.brenda.recetario.entity;
 
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.brenda.recetario.enums.RecipeCategory;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
@@ -12,10 +17,14 @@ import lombok.Data;
 public class Recipe {
     @Id
     private String id; // Mongo use ObjectId, but it is mapped as a String
+    @NotBlank
     private String title;
-    private String category;
+    @NotNull
+    private RecipeCategory category;
+    @NotEmpty
     private List<String> ingredients;
+    @NotBlank
     private String instructions;
-    private boolean isFit;
-    private String urlImage;
+    private Boolean fit;
+    private String imageUrl;
 }
