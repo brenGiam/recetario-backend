@@ -1,6 +1,8 @@
 package com.brenda.recetario.service;
 
+import java.text.Normalizer;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -24,6 +26,7 @@ import com.brenda.recetario.repository.RecipeRepository;
 import lombok.Data;
 
 @Service
+@Transactional(readOnly = true)
 @Data
 public class RecipeService {
     private final RecipeRepository recipeRepository;
@@ -36,7 +39,7 @@ public class RecipeService {
 
         recipe.setTitle(recipeDTO.getTitle());
         recipe.setCategory(recipeDTO.getCategory());
-        recipe.setIngredients(recipeDTO.getIngredients());
+        recipe.setIngredients(ingredientsNormalitation(recipeDTO.getIngredients()));
         recipe.setInstructions(recipeDTO.getInstructions());
         recipe.setFit(recipeDTO.getFit());
 
@@ -59,7 +62,6 @@ public class RecipeService {
         }
     }
 
-    @Transactional(readOnly = true)
     public RecipeResponseDTO getRecipeById(String id) {
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("La receta no existe"));
@@ -74,7 +76,7 @@ public class RecipeService {
 
         recipe.setTitle(recipeDTO.getTitle());
         recipe.setCategory(recipeDTO.getCategory());
-        recipe.setIngredients(recipeDTO.getIngredients());
+        recipe.setIngredients(ingredientsNormalitation(recipeDTO.getIngredients()));
         recipe.setInstructions(recipeDTO.getInstructions());
         recipe.setFit(recipeDTO.getFit());
 
@@ -111,7 +113,6 @@ public class RecipeService {
         recipeRepository.delete(recipe);
     }
 
-    @Transactional(readOnly = true)
     public Page<RecipeFilteredResponseDTO> getAllRecipesWithFilter(
             RecipeCategory category,
             Boolean fit,
@@ -142,7 +143,6 @@ public class RecipeService {
 
     }
 
-    @Transactional(readOnly = true)
     public Page<RecipeFilteredResponseDTO> getAllRecipesWithIngredients(
             List<String> ingredients,
             int page,
@@ -151,7 +151,8 @@ public class RecipeService {
         Query query = new Query();
 
         if (ingredients != null && !ingredients.isEmpty()) {
-            query.addCriteria(Criteria.where("ingredients").all(ingredients));
+            List<String> normalizedIngredients = ingredientsNormalitation(ingredients);
+            query.addCriteria(Criteria.where("ingredients").all(normalizedIngredients));
         }
 
         Pageable pageable = PageRequest.of(page, size);
@@ -166,5 +167,24 @@ public class RecipeService {
                 .toList();
 
         return new PageImpl<>(dtos, pageable, total);
+    }
+
+    // Auxiliary methods
+    public List<String> ingredientsNormalitation(List<String> ingredients) {
+        if (ingredients == null)
+            return List.of();
+
+        return ingredients.stream()
+                .filter(Objects::nonNull) // avoid nulls
+                .map(String::trim) // delete extra spaces
+                .map(String::toLowerCase)
+                .map(this::removeAccents)
+                .toList();
+    }
+
+    private String removeAccents(String input) {
+        return Normalizer
+                .normalize(input, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");// remove accents
     }
 }

@@ -16,7 +16,7 @@ import lombok.Data;
 @Document(collection = "recipes")
 public class Recipe {
     @Id
-    private String id; // Mongo use ObjectId, but it is mapped as a String
+    private String id; // Mongo uses ObjectId, but it is mapped as a String
     @NotBlank
     private String title;
     @NotNull
@@ -25,6 +25,7 @@ public class Recipe {
     private List<String> ingredients;
     @NotBlank
     private String instructions;
+    @NotNull
     private Boolean fit;
     private String imageUrl;
 }
