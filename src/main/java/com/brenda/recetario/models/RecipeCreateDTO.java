@@ -19,5 +19,6 @@ public class RecipeCreateDTO {
     private List<String> ingredients;
     @NotBlank
     private String instructions;
+    @NotNull
     private Boolean fit;
 }

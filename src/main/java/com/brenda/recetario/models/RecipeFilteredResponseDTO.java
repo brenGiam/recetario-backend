@@ -6,7 +6,9 @@ import com.brenda.recetario.enums.RecipeCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@NoArgsConstructor
 @Data
 public class RecipeFilteredResponseDTO {
     private String id;
@@ -14,6 +16,7 @@ public class RecipeFilteredResponseDTO {
     private String title;
     @NotNull
     private RecipeCategory category;
+    @NotNull
     private Boolean fit;
     private String imageUrl;
 

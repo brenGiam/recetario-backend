@@ -20,6 +20,7 @@ public class RecipeUpdateDTO {
     private List<String> ingredients;
     @NotBlank
     private String instructions;
+    @NotNull
     private Boolean fit;
     private String imageUrl;
 }

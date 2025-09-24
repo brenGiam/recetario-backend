@@ -6,7 +6,6 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.brenda.recetario.entity.Recipe;
 import com.brenda.recetario.enums.RecipeCategory;
 
 import jakarta.validation.ConstraintViolation;
@@ -16,7 +15,7 @@ import jakarta.validation.Validator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 //No test for default constructors because of Lombok
-public class RecipeResponseDTOTest {
+public class RecipeCreateDTOTest {
 
     private Validator validator;
 
@@ -29,7 +28,7 @@ public class RecipeResponseDTOTest {
     void whenTitleIsBlank_thenValidationFails() {
 
         // Given: an empty title DTO
-        RecipeResponseDTO dto = new RecipeResponseDTO();
+        RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle(""); // invalid
         dto.setCategory(RecipeCategory.CENA);
         dto.setIngredients(List.of("Harina"));
@@ -37,7 +36,7 @@ public class RecipeResponseDTOTest {
         dto.setFit(true);
 
         // When: DTO is validated
-        Set<ConstraintViolation<RecipeResponseDTO>> violations = validator.validate(dto);
+        Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
         // Then: validation should fail because of the empty title
         assertThat(violations).isNotEmpty();
@@ -50,7 +49,7 @@ public class RecipeResponseDTOTest {
     void whenIngredientsIsEmpty_thenValidationFails() {
 
         // Given: an empty ingredients DTO
-        RecipeResponseDTO dto = new RecipeResponseDTO();
+        RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle("Pizza");
         dto.setCategory(RecipeCategory.CENA);
         dto.setIngredients(List.of()); // empty
@@ -58,7 +57,7 @@ public class RecipeResponseDTOTest {
         dto.setFit(true);
 
         // When: DTO is validated
-        Set<ConstraintViolation<RecipeResponseDTO>> violations = validator.validate(dto);
+        Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
         // Then: validation should fail because of the empty ingredients
         assertThat(violations).isNotEmpty();
@@ -71,7 +70,7 @@ public class RecipeResponseDTOTest {
     void whenInstructionsIsBlank_thenValidationFails() {
 
         // Given: a blank instructions DTO
-        RecipeResponseDTO dto = new RecipeResponseDTO();
+        RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle("Pizza");
         dto.setCategory(RecipeCategory.CENA);
         dto.setIngredients(List.of("Harina"));
@@ -79,7 +78,7 @@ public class RecipeResponseDTOTest {
         dto.setFit(true);
 
         // When: DTO is validated
-        Set<ConstraintViolation<RecipeResponseDTO>> violations = validator.validate(dto);
+        Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
         // Then: validation should fail because of the blank instructions
         assertThat(violations).isNotEmpty();
@@ -92,7 +91,7 @@ public class RecipeResponseDTOTest {
     void whenCategoryIsNull_thenValidationFails() {
 
         // Given: a null category DTO
-        RecipeResponseDTO dto = new RecipeResponseDTO();
+        RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle("Pizza");
         dto.setCategory(null); // invalid
         dto.setIngredients(List.of("Harina"));
@@ -100,7 +99,7 @@ public class RecipeResponseDTOTest {
         dto.setFit(true);
 
         // When: DTO is validated
-        Set<ConstraintViolation<RecipeResponseDTO>> violations = validator.validate(dto);
+        Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
         // Then: validation should fail because of the null category
         assertThat(violations).isNotEmpty();
@@ -113,7 +112,7 @@ public class RecipeResponseDTOTest {
     void whenFitIsNull_thenValidationFails() {
 
         // Given: a null isFit DTO
-        RecipeResponseDTO dto = new RecipeResponseDTO();
+        RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle("Pizza");
         dto.setCategory(RecipeCategory.CENA);
         dto.setIngredients(List.of("Harina"));
@@ -121,7 +120,7 @@ public class RecipeResponseDTOTest {
         dto.setFit(null); // invalid
 
         // When: DTO is validated
-        Set<ConstraintViolation<RecipeResponseDTO>> violations = validator.validate(dto);
+        Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
         // Then: validation should fail because of the null isFit
         assertThat(violations).isNotEmpty();
@@ -131,27 +130,20 @@ public class RecipeResponseDTOTest {
     }
 
     @Test
-    void constructorShouldMapFieldsCorrectly() {
-        // Given: a valid recipe
-        Recipe recipe = new Recipe();
-        recipe.setId("123");
-        recipe.setTitle("Pizza");
-        recipe.setCategory(RecipeCategory.CENA);
-        recipe.setIngredients(List.of("Harina", "Tomate", "Queso"));
-        recipe.setInstructions("Hornear 20 min");
-        recipe.setFit(true);
-        recipe.setImageUrl("http://image.com/pizza.jpg");
+    void whenDtoIsValid_thenNoViolations() {
 
-        // When: DTO is created
-        RecipeResponseDTO dto = new RecipeResponseDTO(recipe);
+        // Given: a valid DTO
+        RecipeCreateDTO dto = new RecipeCreateDTO();
+        dto.setTitle("Pizza");
+        dto.setCategory(RecipeCategory.CENA);
+        dto.setIngredients(List.of("Harina", "Queso"));
+        dto.setInstructions("Hornear 20 minutos");
+        dto.setFit(true);
 
-        // Then: response should be correct
-        assertThat(dto.getId()).isEqualTo("123");
-        assertThat(dto.getTitle()).isEqualTo("Pizza");
-        assertThat(dto.getCategory()).isEqualTo(RecipeCategory.CENA);
-        assertThat(dto.getIngredients()).containsExactly("Harina", "Tomate", "Queso");
-        assertThat(dto.getInstructions()).isEqualTo("Hornear 20 min");
-        assertThat(dto.getFit()).isTrue();
-        assertThat(dto.getImageUrl()).isEqualTo("http://image.com/pizza.jpg");
+        // When: DTO is validated
+        Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
+
+        // Then: validation shouldn't fail
+        assertThat(violations).isEmpty();
     }
 }
