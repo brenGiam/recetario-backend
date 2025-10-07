@@ -5,9 +5,6 @@ import java.util.List;
 import com.brenda.recetario.entity.Recipe;
 import com.brenda.recetario.enums.RecipeCategory;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,15 +12,10 @@ import lombok.NoArgsConstructor;
 @Data
 public class RecipeResponseDTO {
     private String id;
-    @NotBlank
     private String title;
-    @NotNull
     private RecipeCategory category;
-    @NotEmpty
     private List<String> ingredients;
-    @NotBlank
     private String instructions;
-    @NotNull
     private Boolean fit;
     private String imageUrl;
 

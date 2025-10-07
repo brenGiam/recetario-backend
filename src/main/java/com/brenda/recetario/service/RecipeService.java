@@ -24,9 +24,11 @@ import com.brenda.recetario.models.RecipeUpdateDTO;
 import com.brenda.recetario.repository.RecipeRepository;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional(readOnly = true)
+@Slf4j
 @Data
 public class RecipeService {
     private final RecipeRepository recipeRepository;
@@ -49,14 +51,18 @@ public class RecipeService {
             if (image != null && !image.isEmpty()) {
                 imageUrl = imageService.uploadImage(image);
                 recipe.setImageUrl(imageUrl);
+                log.info("Imagen subida correctamente: {}", imageUrl);
             }
 
             recipeRepository.save(recipe);
+            log.info("Receta creada correctamente: {}", recipe.getTitle());
             return recipe;
 
         } catch (Exception e) {
+            log.error("Error creando la receta: {}", recipe.getTitle(), e);
             if (imageUrl != null) {
                 imageService.deleteImage(imageUrl);
+                log.warn("Se eliminó la imagen subida por el error: {}", imageUrl);
             }
             throw new RuntimeException("Error creando la receta", e);
         }
@@ -64,7 +70,7 @@ public class RecipeService {
 
     public RecipeResponseDTO getRecipeById(String id) {
         Recipe recipe = recipeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("La receta no existe"));
+                .orElseThrow(() -> new RuntimeException("La receta especificada no existe."));
 
         return new RecipeResponseDTO(recipe);
     }
@@ -84,15 +90,19 @@ public class RecipeService {
             if (image != null && !image.isEmpty()) {
                 String oldImageUrl = recipe.getImageUrl();
                 String newImageUrl = imageService.uploadImage(image);
+                log.info("Nueva imagen subida correctamente: {}", newImageUrl);
                 recipe.setImageUrl(newImageUrl);
 
                 if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
                     imageService.deleteImage(oldImageUrl);
+                    log.info("Imagen anterior eliminada correctamente: {}", oldImageUrl);
                 }
             }
             recipeRepository.save(recipe);
+            log.info("Receta actualizada correctamente: {}", recipe.getTitle());
             return recipe;
         } catch (Exception e) {
+            log.error("Error actualizando la receta: {}", recipe.getTitle(), e);
             throw new RuntimeException("Error actualizando la receta", e);
         }
     }
@@ -105,12 +115,14 @@ public class RecipeService {
         if (recipe.getImageUrl() != null) {
             try {
                 imageService.deleteImage(recipe.getImageUrl());
+                log.info("Imagen eliminada exitosamente: {}", recipe.getImageUrl());
             } catch (Exception e) {
-                System.err.println("No se pudo eliminar la imagen: " + e.getMessage());
+                log.error("No se pudo eliminar la imagen: {}", recipe.getImageUrl(), e);
             }
         }
 
         recipeRepository.delete(recipe);
+        log.info("Receta eliminada exitosamente: {}");
     }
 
     public Page<RecipeFilteredResponseDTO> getAllRecipesWithFilter(

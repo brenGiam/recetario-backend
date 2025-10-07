@@ -4,15 +4,16 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @Data
 public class ImageService {
     private final Cloudinary cloudinary;
@@ -20,25 +21,31 @@ public class ImageService {
     public String uploadImage(MultipartFile image) {
         try {
             Map<?, ?> res = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.emptyMap());
-            return (String) res.get("secure_url");
+            String url = (String) res.get("secure_url");
+            log.info("Imagen subida correctamente a Cloudinary: {}", url);
+            return url;
         } catch (IOException e) {
+            log.error("Error subiendo imagen a Cloudinary", e);
             throw new RuntimeException("No se pudo subir la imagen", e);
         }
     }
 
-    @Transactional
     public void deleteImage(String url) {
         try {
-            String publicId = exgtractPublicIdFromUrl(url);
+            String publicId = extractPublicIdFromUrl(url);
             if (publicId != null && !publicId.isEmpty()) {
                 cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+                log.info("Imagen eliminada correctamente de Cloudinary: {}", url);
+            } else {
+                log.warn("No se pudo extraer publicId de la URL: {}", url);
             }
         } catch (IOException e) {
+            log.error("Error eliminado imagen de Cloudinary: {}", e);
             throw new RuntimeException("No se pudo eliminar la imagen de Cloudinary", e);
         }
     }
 
-    private String exgtractPublicIdFromUrl(String url) {
+    private String extractPublicIdFromUrl(String url) {
         try {
             // Get the final part from the URL (eg. "miperro_k7b9lm.jpg")
             String[] parts = url.split("/");
