@@ -22,11 +22,11 @@ public class ImageService {
         try {
             Map<?, ?> res = cloudinary.uploader().upload(image.getBytes(), ObjectUtils.emptyMap());
             String url = (String) res.get("secure_url");
-            log.info("Imagen subida correctamente a Cloudinary: {}", url);
+            log.info("Servicio imagen: Imagen subida correctamente a Cloudinary: {}", url);
             return url;
         } catch (IOException e) {
-            log.error("Error subiendo imagen a Cloudinary", e);
-            throw new RuntimeException("No se pudo subir la imagen", e);
+            log.error("Servicio imagen: Error subiendo imagen a Cloudinary", e);
+            throw new RuntimeException("Servicio imagen: No se pudo subir la imagen", e);
         }
     }
 
@@ -35,13 +35,13 @@ public class ImageService {
             String publicId = extractPublicIdFromUrl(url);
             if (publicId != null && !publicId.isEmpty()) {
                 cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
-                log.info("Imagen eliminada correctamente de Cloudinary: {}", url);
+                log.info("Servicio imagen: Imagen eliminada correctamente de Cloudinary: {}", url);
             } else {
-                log.warn("No se pudo extraer publicId de la URL: {}", url);
+                log.warn("Servicio imagen: No se pudo extraer publicId de la URL: {}", url);
             }
         } catch (IOException e) {
-            log.error("Error eliminado imagen de Cloudinary: {}", e);
-            throw new RuntimeException("No se pudo eliminar la imagen de Cloudinary", e);
+            log.error("Servicio imagen: Error eliminado imagen de Cloudinary: {}", e);
+            throw new RuntimeException("Servicio imagen: No se pudo eliminar la imagen de Cloudinary", e);
         }
     }
 
