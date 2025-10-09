@@ -163,8 +163,11 @@ public class RecipeService {
         Query query = new Query();
 
         if (ingredients != null && !ingredients.isEmpty()) {
-            List<String> normalizedIngredients = ingredientsNormalitation(ingredients);
-            query.addCriteria(Criteria.where("ingredients").all(normalizedIngredients));
+            List<Criteria> regexCriteria = ingredients.stream()
+                    .map(ing -> Criteria.where("ingredients").regex(".*" + ing + ".*", "i"))
+                    .toList();
+
+            query.addCriteria(new Criteria().andOperator(regexCriteria.toArray(new Criteria[0])));
         }
 
         Pageable pageable = PageRequest.of(page, size);

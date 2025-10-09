@@ -2,6 +2,12 @@ package com.brenda.recetario.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -32,13 +38,20 @@ import com.brenda.recetario.service.RecipeService;
 @AllArgsConstructor
 @RestController
 @RequestMapping("/recipes")
+@Tag(name = "Recetas", description = "Operaciones relacionadas con las recetas del sistema")
 public class RecipeController {
     private final RecipeService recipeService;
 
+    @Operation(summary = "Crear una nueva receta", description = "Crea una receta a partir de los datos enviados en formato JSON y una imagen opcional.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Receta creada exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createRecipe(
-            @RequestPart("recipe") String recipeJson,
-            @RequestPart(value = "image", required = false) MultipartFile image) {
+            @Parameter(description = "Datos de la receta en formato JSON") @RequestPart("recipe") String recipeJson,
+            @Parameter(description = "Imagen opcional de la receta") @RequestPart(value = "image", required = false) MultipartFile image) {
         try {
             log.info("Controlador: Creando nueva receta...");
 
@@ -74,8 +87,15 @@ public class RecipeController {
         }
     }
 
+    @Operation(summary = "Obtener una receta", description = "Devuelve los detalles de una receta mediante su ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Receta encontrada"),
+            @ApiResponse(responseCode = "404", description = "Receta no encontrada"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<?> getRecipeById(@PathVariable String id) {
+    public ResponseEntity<?> getRecipeById(
+            @Parameter(description = "ID de la receta a buscar") @PathVariable String id) {
         try {
             log.info("Controlador: Buscando receta con id: {}", id);
             RecipeResponseDTO dto = recipeService.getRecipeById(id);
@@ -91,10 +111,17 @@ public class RecipeController {
         }
     }
 
+    @Operation(summary = "Actualizar una receta", description = "Permite modificar uno o varios campos de una receta existente, incluyendo su imágen.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Receta actualizada exitosamente"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos o JSON incorrecto"),
+            @ApiResponse(responseCode = "404", description = "Receta no encontrada"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @PatchMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> updateRecipe(
-            @RequestPart("recipe") String recipeJson,
-            @RequestPart(value = "image", required = false) MultipartFile image) {
+            @Parameter(description = "Datos actualizados de la receta en formato JSON") @RequestPart("recipe") String recipeJson,
+            @Parameter(description = "Nueva imagen opcional de la receta") @RequestPart(value = "image", required = false) MultipartFile image) {
         try {
             log.info("Controlador: Actualizando receta...");
 
@@ -130,8 +157,15 @@ public class RecipeController {
         }
     }
 
+    @Operation(summary = "Eliminar una receta", description = "Busca y elimina una receta mediante su ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Receta eliminada exitosamente"),
+            @ApiResponse(responseCode = "404", description = "Receta no encontrada"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteRecipe(@PathVariable String id) {
+    public ResponseEntity<?> deleteRecipe(
+            @Parameter(description = "ID de la receta a eliminar") @PathVariable String id) {
         try {
             log.info("Controlador: Eliminando receta con id: {}", id);
             recipeService.deleteRecipe(id);
@@ -148,12 +182,17 @@ public class RecipeController {
         }
     }
 
+    @Operation(summary = "Obtener todas las recetas con o sin filtros", description = "Devuelve una lista paginada de recetas que pueden estar filtradas por categoría y/o si son fit.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @GetMapping("/filter")
     public ResponseEntity<?> getRecipesWithFilter(
-            @RequestParam(required = false) RecipeCategory category,
-            @RequestParam(required = false) Boolean fit,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @Parameter(description = "Categoría de la receta") @RequestParam(required = false) RecipeCategory category,
+            @Parameter(description = "Si la receta es fit o no") @RequestParam(required = false) Boolean fit,
+            @Parameter(description = "Número de página (0 por defecto)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página (10 por defecto)") @RequestParam(defaultValue = "10") int size) {
         try {
             log.info("Controlador: Obteniendo recetas con filtros -> category: {}, fit: {}", category, fit);
             Page<RecipeFilteredResponseDTO> recipes = recipeService.getAllRecipesWithFilter(category, fit, page, size);
@@ -165,11 +204,16 @@ public class RecipeController {
         }
     }
 
+    @Operation(summary = "Obtener todas las recetas con ingredientes específicos", description = "Devuelve una lista paginada de recetas filtradas por ingredientes.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente"),
+            @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+    })
     @GetMapping("/ingredients")
     public ResponseEntity<?> getRecipesByIngredients(
-            @RequestParam List<String> ingredients,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @Parameter(description = "Lista de ingredientes a buscar") @RequestParam List<String> ingredients,
+            @Parameter(description = "Número de página (0 por defecto)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página (10 por defecto)") @RequestParam(defaultValue = "10") int size) {
         try {
             log.info("Controlador: Buscando recetas con ingredientes: {}", ingredients);
             Page<RecipeFilteredResponseDTO> recipes = recipeService.getAllRecipesWithIngredients(ingredients, page,
