@@ -9,9 +9,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validation;
 import jakarta.validation.Validator;
-import jakarta.validation.ValidatorFactory;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -55,7 +53,7 @@ public class RecipeController {
             @Parameter(description = "Datos de la receta en formato JSON") @RequestPart("recipe") String recipeJson,
             @Parameter(description = "Imagen opcional de la receta") @RequestPart(value = "image", required = false) MultipartFile image) {
         try {
-            log.info("Controlador: Creando nueva receta...");
+            log.info("RecipeController: Creando nueva receta...");
 
             RecipeCreateDTO dto = objectMapper.readValue(recipeJson, RecipeCreateDTO.class);
 
@@ -66,21 +64,20 @@ public class RecipeController {
                         .collect(Collectors.toMap(
                                 v -> v.getPropertyPath().toString(),
                                 ConstraintViolation::getMessage));
-                log.warn("Controlador: Error de validación: {}", errors);
+                log.warn("RecipeController: Error de validación: {}", errors);
                 return ResponseEntity.badRequest().body(errors);
             }
 
             Recipe recipe = recipeService.createRecipe(dto, image);
-            log.info("Controlador: Receta creada exitosamente con ID: {}", recipe.getId());
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(recipe);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new RecipeResponseDTO(recipe));
 
         } catch (JsonProcessingException e) {
-            log.error("Controlador: Error al parsear JSON de la receta: {}", e.getMessage());
+            log.error("RecipeController: Error al parsear JSON de la receta: {}", e.getMessage());
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "JSON inválido: " + e.getOriginalMessage()));
         } catch (Exception e) {
-            log.error("Controlador: Error interno al crear receta", e);
+            log.error("RecipeController: Error interno al crear receta", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
@@ -96,15 +93,15 @@ public class RecipeController {
     public ResponseEntity<?> getRecipeById(
             @Parameter(description = "ID de la receta a buscar") @PathVariable String id) {
         try {
-            log.info("Controlador: Buscando receta con id: {}", id);
+            log.info("RecipeController: Buscando receta con id: {}", id);
             RecipeResponseDTO dto = recipeService.getRecipeById(id);
             return ResponseEntity.ok(dto);
         } catch (RuntimeException e) {
-            log.warn("Controlador: Receta no encontrada: {}", id);
+            log.warn("RecipeController: Receta no encontrada: {}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            log.error("Controlador: Error interno al obtener receta con id: {}", id, e);
+            log.error("RecipeController: Error interno al obtener receta con id: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
@@ -122,13 +119,10 @@ public class RecipeController {
             @Parameter(description = "Datos actualizados de la receta en formato JSON") @RequestPart("recipe") String recipeJson,
             @Parameter(description = "Nueva imagen opcional de la receta") @RequestPart(value = "image", required = false) MultipartFile image) {
         try {
-            log.info("Controlador: Actualizando receta...");
+            log.info("RecipeController: Actualizando receta...");
 
-            ObjectMapper objectMapper = new ObjectMapper();
             RecipeUpdateDTO dto = objectMapper.readValue(recipeJson, RecipeUpdateDTO.class);
 
-            ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-            Validator validator = factory.getValidator();
             Set<ConstraintViolation<RecipeUpdateDTO>> violations = validator.validate(dto);
 
             if (!violations.isEmpty()) {
@@ -136,21 +130,26 @@ public class RecipeController {
                         .collect(Collectors.toMap(
                                 v -> v.getPropertyPath().toString(),
                                 ConstraintViolation::getMessage));
-                log.warn("Controlador: Error de validación: {}", errors);
+                log.warn("RecipeController: Error de validación: {}", errors);
                 return ResponseEntity.badRequest().body(errors);
             }
 
             Recipe recipe = recipeService.updateRecipe(dto, image);
-            log.info("Controlador: Receta actualizada exitosamente con ID: {}", recipe.getId());
 
-            return ResponseEntity.status(HttpStatus.OK).body(recipe);
+            return ResponseEntity.status(HttpStatus.OK).body(new RecipeResponseDTO(recipe));
 
         } catch (JsonProcessingException e) {
-            log.error("Controlador: Error al parsear JSON de la receta: {}", e.getMessage());
+            log.error("RecipeController: JSON inválido al actualizar receta: {}", e.getOriginalMessage());
             return ResponseEntity.badRequest()
-                    .body(Map.of("Controlador: error", "JSON inválido: " + e.getOriginalMessage()));
+                    .body(Map.of("error", "JSON inválido: " + e.getOriginalMessage()));
+
+        } catch (RuntimeException e) {
+            log.warn("RecipeController: No se pudo actualizar la receta: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+
         } catch (Exception e) {
-            log.error("Controlador: Error interno al actualizar receta", e);
+            log.error("RecipeController: Error inesperado al actualizar receta", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
@@ -166,16 +165,15 @@ public class RecipeController {
     public ResponseEntity<?> deleteRecipe(
             @Parameter(description = "ID de la receta a eliminar") @PathVariable String id) {
         try {
-            log.info("Controlador: Eliminando receta con id: {}", id);
+            log.info("RecipeController: Eliminando receta con id: {}", id);
             recipeService.deleteRecipe(id);
-            log.info("Controlador: Receta eliminada exitosamente con id: {}", id);
             return ResponseEntity.ok(Map.of("message", "Receta eliminada exitosamente"));
         } catch (RuntimeException e) {
-            log.warn("Controlador: Receta no encontrada: {}", id);
+            log.warn("RecipeController: Receta no encontrada: {}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            log.error("Controlador: Error interno al eliminar receta con id: {}", id, e);
+            log.error("RecipeController: Error interno al eliminar receta con id: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
@@ -193,11 +191,11 @@ public class RecipeController {
             @Parameter(description = "Número de página (0 por defecto)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Tamaño de página (10 por defecto)") @RequestParam(defaultValue = "10") int size) {
         try {
-            log.info("Controlador: Obteniendo recetas con filtros -> category: {}, fit: {}", category, fit);
+            log.info("RecipeController: Obteniendo recetas con filtros -> category: {}, fit: {}", category, fit);
             Page<RecipeFilteredResponseDTO> recipes = recipeService.getAllRecipesWithFilter(category, fit, page, size);
             return ResponseEntity.ok(recipes);
         } catch (Exception e) {
-            log.error("Controlador: Error interno al obtener recetas con filtros", e);
+            log.error("RecipeController: Error interno al obtener recetas con filtros", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno: " + e.getMessage()));
         }
@@ -214,12 +212,12 @@ public class RecipeController {
             @Parameter(description = "Número de página (0 por defecto)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Tamaño de página (10 por defecto)") @RequestParam(defaultValue = "10") int size) {
         try {
-            log.info("Controlador: Buscando recetas con ingredientes: {}", ingredients);
+            log.info("RecipeController: Buscando recetas con ingredientes: {}", ingredients);
             Page<RecipeFilteredResponseDTO> recipes = recipeService.getAllRecipesWithIngredients(ingredients, page,
                     size);
             return ResponseEntity.ok(recipes);
         } catch (Exception e) {
-            log.error("Controlador: Error interno al buscar recetas por ingredientes", e);
+            log.error("RecipeController: Error interno al buscar recetas por ingredientes", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno: " + e.getMessage()));
         }

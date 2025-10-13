@@ -51,34 +51,38 @@ public class RecipeService {
             if (image != null && !image.isEmpty()) {
                 imageUrl = imageService.uploadImage(image);
                 recipe.setImageUrl(imageUrl);
-                log.info("Servicio: Imagen subida correctamente: {}", imageUrl);
+                log.info("RecipeService: Imagen subida correctamente: {}", imageUrl);
             }
 
             recipeRepository.save(recipe);
-            log.info("Servicio: Receta creada correctamente: {}", recipe.getTitle());
+            log.info("RecipeService: Receta creada correctamente: {}", recipe.getTitle());
             return recipe;
 
         } catch (Exception e) {
-            log.error("Servicio: Error creando la receta: {}", recipe.getTitle(), e);
+            log.error("RecipeService: Error creando la receta: {}", recipe.getTitle(), e);
             if (imageUrl != null) {
                 imageService.deleteImage(imageUrl);
-                log.warn("Servicio: Se eliminó la imagen subida por el error: {}", imageUrl);
+                log.warn("RecipeService: Se eliminó la imagen subida por el error: {}", imageUrl);
             }
-            throw new RuntimeException("Servicio: Error creando la receta", e);
+            throw new RuntimeException("RecipeService: Error creando la receta", e);
         }
     }
 
     public RecipeResponseDTO getRecipeById(String id) {
         Recipe recipe = recipeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Servicio: La receta especificada no existe."));
+                .orElseThrow(() -> {
+                    log.warn("RecipeService: No se encontró receta con ID: {}", id);
+                    return new RuntimeException("La receta especificada no existe.");
+                });
 
+        log.info("RecipeService: Receta encontrada: {}", recipe.getTitle());
         return new RecipeResponseDTO(recipe);
     }
 
     @Transactional
     public Recipe updateRecipe(RecipeUpdateDTO recipeDTO, MultipartFile image) {
         Recipe recipe = recipeRepository.findById(recipeDTO.getId())
-                .orElseThrow(() -> new RuntimeException("Servicio: La receta especificada no existe."));
+                .orElseThrow(() -> new RuntimeException("La receta especificada no existe."));
 
         recipe.setTitle(recipeDTO.getTitle());
         recipe.setCategory(recipeDTO.getCategory());
@@ -90,39 +94,42 @@ public class RecipeService {
             if (image != null && !image.isEmpty()) {
                 String oldImageUrl = recipe.getImageUrl();
                 String newImageUrl = imageService.uploadImage(image);
-                log.info("Servicio: Nueva imagen subida correctamente: {}", newImageUrl);
+                log.info("RecipeService: Nueva imagen subida correctamente: {}", newImageUrl);
                 recipe.setImageUrl(newImageUrl);
 
                 if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
                     imageService.deleteImage(oldImageUrl);
-                    log.info("Servicio: Imagen anterior eliminada correctamente: {}", oldImageUrl);
+                    log.info("RecipeService: Imagen anterior eliminada correctamente: {}", oldImageUrl);
                 }
             }
             recipeRepository.save(recipe);
-            log.info("Servicio: Receta actualizada correctamente: {}", recipe.getTitle());
+            log.info("RecipeService: Receta actualizada correctamente: {}", recipe.getTitle());
             return recipe;
         } catch (Exception e) {
-            log.error("Servicio: Error actualizando la receta: {}", recipe.getTitle(), e);
-            throw new RuntimeException("Servicio: Error actualizando la receta", e);
+            log.error("RecipeService: Error actualizando la receta: {}", recipe.getTitle(), e);
+            throw new RuntimeException("Error actualizando la receta", e);
         }
     }
 
     @Transactional
     public void deleteRecipe(String id) {
         Recipe recipe = recipeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Servicio: La receta especificada no existe."));
+                .orElseThrow(() -> {
+                    log.warn("RecipeService: No se encontró receta con ID: {}", id);
+                    return new RuntimeException("La receta especificada no existe.");
+                });
 
         if (recipe.getImageUrl() != null) {
             try {
                 imageService.deleteImage(recipe.getImageUrl());
-                log.info("Servicio: Imagen eliminada exitosamente: {}", recipe.getImageUrl());
+                log.info("RecipeService: Imagen eliminada exitosamente: {}", recipe.getImageUrl());
             } catch (Exception e) {
-                log.error("Servicio: No se pudo eliminar la imagen: {}", recipe.getImageUrl(), e);
+                log.error("RecipeService: No se pudo eliminar la imagen: {}", recipe.getImageUrl(), e);
             }
         }
 
         recipeRepository.delete(recipe);
-        log.info("Servicio: Receta eliminada exitosamente: {}");
+        log.info("RecipeService: Receta eliminada exitosamente: {}", recipe.getTitle());
     }
 
     public Page<RecipeFilteredResponseDTO> getAllRecipesWithFilter(
