@@ -17,19 +17,23 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.brenda.recetario.entity.Recipe;
 import com.brenda.recetario.enums.RecipeCategory;
+import com.brenda.recetario.exceptions.ImageDeletionException;
+import com.brenda.recetario.exceptions.ImageUploadException;
+import com.brenda.recetario.exceptions.InvalidDataException;
+import com.brenda.recetario.exceptions.RecipeNotFoundException;
 import com.brenda.recetario.models.RecipeCreateDTO;
 import com.brenda.recetario.models.RecipeFilteredResponseDTO;
 import com.brenda.recetario.models.RecipeResponseDTO;
 import com.brenda.recetario.models.RecipeUpdateDTO;
 import com.brenda.recetario.repository.RecipeRepository;
 
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Transactional(readOnly = true)
 @Slf4j
-@Data
+@RequiredArgsConstructor
 public class RecipeService {
     private final RecipeRepository recipeRepository;
     private final ImageService imageService;
@@ -58,13 +62,20 @@ public class RecipeService {
             log.info("RecipeService: Receta creada correctamente: {}", recipe.getTitle());
             return recipe;
 
+        } catch (ImageUploadException e) {
+            log.error("RecipeService: Error subiendo imagen", e);
+            throw new InvalidDataException("No se pudo subir la imagen de la receta", e);
         } catch (Exception e) {
             log.error("RecipeService: Error creando la receta: {}", recipe.getTitle(), e);
             if (imageUrl != null) {
-                imageService.deleteImage(imageUrl);
-                log.warn("RecipeService: Se eliminó la imagen subida por el error: {}", imageUrl);
+                try {
+                    imageService.deleteImage(imageUrl);
+                    log.warn("RecipeService: Imagen eliminada por error: {}", imageUrl);
+                } catch (ImageDeletionException ex) {
+                    log.error("RecipeService: No se pudo eliminar la imagen luego del error", ex);
+                }
             }
-            throw new RuntimeException("RecipeService: Error creando la receta", e);
+            throw new InvalidDataException("Error creando la receta", e);
         }
     }
 
@@ -72,7 +83,7 @@ public class RecipeService {
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("RecipeService: No se encontró receta con ID: {}", id);
-                    return new RuntimeException("La receta especificada no existe.");
+                    return new RecipeNotFoundException("La receta especificada no existe.");
                 });
 
         log.info("RecipeService: Receta encontrada: {}", recipe.getTitle());
@@ -82,7 +93,7 @@ public class RecipeService {
     @Transactional
     public Recipe updateRecipe(RecipeUpdateDTO recipeDTO, MultipartFile image) {
         Recipe recipe = recipeRepository.findById(recipeDTO.getId())
-                .orElseThrow(() -> new RuntimeException("La receta especificada no existe."));
+                .orElseThrow(() -> new RecipeNotFoundException("La receta especificada no existe."));
 
         recipe.setTitle(recipeDTO.getTitle());
         recipe.setCategory(recipeDTO.getCategory());
@@ -98,16 +109,23 @@ public class RecipeService {
                 recipe.setImageUrl(newImageUrl);
 
                 if (oldImageUrl != null && !oldImageUrl.isEmpty()) {
-                    imageService.deleteImage(oldImageUrl);
-                    log.info("RecipeService: Imagen anterior eliminada correctamente: {}", oldImageUrl);
+                    try {
+                        imageService.deleteImage(oldImageUrl);
+                        log.info("RecipeService: Imagen anterior eliminada: {}", oldImageUrl);
+                    } catch (ImageDeletionException ex) {
+                        log.error("RecipeService: No se pudo eliminar la imagen anterior", ex);
+                    }
                 }
             }
             recipeRepository.save(recipe);
             log.info("RecipeService: Receta actualizada correctamente: {}", recipe.getTitle());
             return recipe;
+        } catch (ImageUploadException e) {
+            log.error("RecipeService: Error subiendo imagen", e);
+            throw new InvalidDataException("No se pudo subir la nueva imagen", e);
         } catch (Exception e) {
             log.error("RecipeService: Error actualizando la receta: {}", recipe.getTitle(), e);
-            throw new RuntimeException("Error actualizando la receta", e);
+            throw new InvalidDataException("Error actualizando la receta: " + e.getMessage(), e);
         }
     }
 
@@ -116,15 +134,15 @@ public class RecipeService {
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> {
                     log.warn("RecipeService: No se encontró receta con ID: {}", id);
-                    return new RuntimeException("La receta especificada no existe.");
+                    return new RecipeNotFoundException("La receta especificada no existe.");
                 });
 
         if (recipe.getImageUrl() != null) {
             try {
                 imageService.deleteImage(recipe.getImageUrl());
-                log.info("RecipeService: Imagen eliminada exitosamente: {}", recipe.getImageUrl());
-            } catch (Exception e) {
-                log.error("RecipeService: No se pudo eliminar la imagen: {}", recipe.getImageUrl(), e);
+                log.info("RecipeService: Imagen eliminada: {}", recipe.getImageUrl());
+            } catch (ImageDeletionException e) {
+                log.error("RecipeService: No se pudo eliminar la imagen", e);
             }
         }
 

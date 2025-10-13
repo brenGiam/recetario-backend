@@ -56,7 +56,7 @@ class ImageServiceTest {
         when(file.getBytes()).thenThrow(new IOException("Fail"));
 
         RuntimeException exception = assertThrows(RuntimeException.class, () -> imageService.uploadImage(file));
-        assertThat(exception.getMessage()).isEqualTo("No se pudo subir la imagen");
+        assertThat(exception.getMessage()).isEqualTo("No se pudo subir la imagen a Cloudinary");
     }
 
     @Test

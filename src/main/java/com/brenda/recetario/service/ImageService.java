@@ -6,15 +6,17 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.brenda.recetario.exceptions.ImageDeletionException;
+import com.brenda.recetario.exceptions.ImageUploadException;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-@Data
+@AllArgsConstructor
 public class ImageService {
     private final Cloudinary cloudinary;
 
@@ -26,7 +28,7 @@ public class ImageService {
             return url;
         } catch (IOException e) {
             log.error("Servicio imagen: Error subiendo imagen a Cloudinary", e);
-            throw new RuntimeException("Servicio imagen: No se pudo subir la imagen", e);
+            throw new ImageUploadException("No se pudo subir la imagen a Cloudinary", e);
         }
     }
 
@@ -41,7 +43,7 @@ public class ImageService {
             }
         } catch (IOException e) {
             log.error("Servicio imagen: Error eliminado imagen de Cloudinary: {}", e);
-            throw new RuntimeException("Servicio imagen: No se pudo eliminar la imagen de Cloudinary", e);
+            throw new ImageDeletionException("No se pudo eliminar la imagen de Cloudinary", e);
         }
     }
 

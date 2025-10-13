@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.brenda.recetario.entity.Recipe;
 import com.brenda.recetario.enums.RecipeCategory;
+import com.brenda.recetario.exceptions.ImageDeletionException;
 import com.brenda.recetario.models.RecipeCreateDTO;
 import com.brenda.recetario.models.RecipeFilteredResponseDTO;
 import com.brenda.recetario.models.RecipeResponseDTO;
@@ -310,7 +311,7 @@ public class RecipeServiceTest {
         Recipe recipe = TestDataFactory.createRecipe();
         when(recipeRepository.findById("123")).thenReturn(Optional.of(recipe));
 
-        doThrow(new RuntimeException("Error al eliminar la imagen"))
+        doThrow(new ImageDeletionException("Error al eliminar la imagen"))
                 .when(imageService).deleteImage("http://test.com/cheesepizza.jpg");
 
         // When
