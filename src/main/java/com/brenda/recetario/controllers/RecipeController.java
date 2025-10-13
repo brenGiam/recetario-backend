@@ -41,6 +41,8 @@ import com.brenda.recetario.service.RecipeService;
 @Tag(name = "Recetas", description = "Operaciones relacionadas con las recetas del sistema")
 public class RecipeController {
     private final RecipeService recipeService;
+    private final ObjectMapper objectMapper;
+    private final Validator validator;
 
     @Operation(summary = "Crear una nueva receta", description = "Crea una receta a partir de los datos enviados en formato JSON y una imagen opcional.")
     @ApiResponses(value = {
@@ -55,11 +57,8 @@ public class RecipeController {
         try {
             log.info("Controlador: Creando nueva receta...");
 
-            ObjectMapper objectMapper = new ObjectMapper();
             RecipeCreateDTO dto = objectMapper.readValue(recipeJson, RecipeCreateDTO.class);
 
-            ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-            Validator validator = factory.getValidator();
             Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
             if (!violations.isEmpty()) {
