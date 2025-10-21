@@ -30,7 +30,7 @@ public class RecipeCreateDTOTest {
         // Given: an empty title DTO
         RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle(""); // invalid
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of("Harina"));
         dto.setInstructions("Mezclar todo");
         dto.setFit(true);
@@ -51,7 +51,7 @@ public class RecipeCreateDTOTest {
         // Given: an empty ingredients DTO
         RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of()); // empty
         dto.setInstructions("Mezclar todo");
         dto.setFit(true);
@@ -72,7 +72,7 @@ public class RecipeCreateDTOTest {
         // Given: a blank instructions DTO
         RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of("Harina"));
         dto.setInstructions(""); // blank
         dto.setFit(true);
@@ -93,7 +93,7 @@ public class RecipeCreateDTOTest {
         // Given: a null category DTO
         RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle("Pizza");
-        dto.setCategory(null); // invalid
+        dto.setCategories(null); // invalid
         dto.setIngredients(List.of("Harina"));
         dto.setInstructions("Hornear");
         dto.setFit(true);
@@ -101,11 +101,11 @@ public class RecipeCreateDTOTest {
         // When: DTO is validated
         Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
-        // Then: validation should fail because of the null category
+        // Then: validation should fail because the list of categories is null or empty
         assertThat(violations).isNotEmpty();
         assertThat(violations)
-                .anyMatch(v -> v.getPropertyPath().toString().equals("category") &&
-                        v.getConstraintDescriptor().getAnnotation() instanceof jakarta.validation.constraints.NotNull);
+                .anyMatch(v -> v.getPropertyPath().toString().equals("categories") &&
+                        v.getMessage().equals("Debe seleccionar al menos una categoría"));
     }
 
     @Test
@@ -114,7 +114,7 @@ public class RecipeCreateDTOTest {
         // Given: a null isFit DTO
         RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of("Harina"));
         dto.setInstructions("Hornear");
         dto.setFit(null); // invalid
@@ -135,7 +135,7 @@ public class RecipeCreateDTOTest {
         // Given: a valid DTO
         RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of("Harina", "Queso"));
         dto.setInstructions("Hornear 20 minutos");
         dto.setFit(true);

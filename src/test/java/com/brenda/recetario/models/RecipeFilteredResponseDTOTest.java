@@ -17,7 +17,7 @@ public class RecipeFilteredResponseDTOTest {
         Recipe recipe = new Recipe();
         recipe.setId("123");
         recipe.setTitle("Pizza");
-        recipe.setCategory(RecipeCategory.CENA);
+        recipe.setCategories(List.of(RecipeCategory.CENA));
         recipe.setIngredients(List.of("Harina", "Tomate", "Queso"));
         recipe.setInstructions("Hornear 20 min");
         recipe.setFit(true);
@@ -29,7 +29,7 @@ public class RecipeFilteredResponseDTOTest {
         // Then: response should be correct
         assertThat(dto.getId()).isEqualTo("123");
         assertThat(dto.getTitle()).isEqualTo("Pizza");
-        assertThat(dto.getCategory()).isEqualTo(RecipeCategory.CENA);
+        assertThat(dto.getCategories()).containsExactly(RecipeCategory.CENA);
         assertThat(dto.getFit()).isTrue();
         assertThat(dto.getImageUrl()).isEqualTo("http://image.com/pizza.jpg");
     }

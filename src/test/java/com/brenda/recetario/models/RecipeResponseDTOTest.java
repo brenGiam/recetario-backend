@@ -18,7 +18,7 @@ public class RecipeResponseDTOTest {
         Recipe recipe = new Recipe();
         recipe.setId("123");
         recipe.setTitle("Pizza");
-        recipe.setCategory(RecipeCategory.CENA);
+        recipe.setCategories(List.of(RecipeCategory.CENA));
         recipe.setIngredients(List.of("Harina", "Tomate", "Queso"));
         recipe.setInstructions("Hornear 20 min");
         recipe.setFit(true);
@@ -30,7 +30,7 @@ public class RecipeResponseDTOTest {
         // Then: response should be correct
         assertThat(dto.getId()).isEqualTo("123");
         assertThat(dto.getTitle()).isEqualTo("Pizza");
-        assertThat(dto.getCategory()).isEqualTo(RecipeCategory.CENA);
+        assertThat(dto.getCategories()).containsExactly(RecipeCategory.CENA);
         assertThat(dto.getIngredients()).containsExactly("Harina", "Tomate", "Queso");
         assertThat(dto.getInstructions()).isEqualTo("Hornear 20 min");
         assertThat(dto.getFit()).isTrue();

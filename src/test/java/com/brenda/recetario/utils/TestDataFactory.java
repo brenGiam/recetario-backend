@@ -12,7 +12,7 @@ public class TestDataFactory {
         Recipe recipe = new Recipe();
         recipe.setId("123");
         recipe.setTitle("Pizza");
-        recipe.setCategory(RecipeCategory.CENA);
+        recipe.setCategories(List.of(RecipeCategory.CENA));
         recipe.setIngredients(List.of("Harina", "Agua"));
         recipe.setInstructions("Hornear 20 min");
         recipe.setFit(true);
@@ -24,7 +24,7 @@ public class TestDataFactory {
         Recipe recipe = new Recipe();
         recipe.setId("123");
         recipe.setTitle("Pizza");
-        recipe.setCategory(RecipeCategory.CENA);
+        recipe.setCategories(List.of(RecipeCategory.CENA));
         recipe.setIngredients(List.of("Harina", "Agua"));
         recipe.setInstructions("Hornear 20 min");
         recipe.setFit(true);
@@ -34,7 +34,7 @@ public class TestDataFactory {
     public static RecipeCreateDTO createRecipeCreateDTO() {
         RecipeCreateDTO dto = new RecipeCreateDTO();
         dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of("Harina", "Agua"));
         dto.setInstructions("Mezclar y hornear");
         dto.setFit(true);
@@ -45,7 +45,7 @@ public class TestDataFactory {
         RecipeUpdateDTO dto = new RecipeUpdateDTO();
         dto.setId("123");
         dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of("Harina", "Agua", "Queso"));
         dto.setInstructions("Mezclar y hornear");
         dto.setFit(false);

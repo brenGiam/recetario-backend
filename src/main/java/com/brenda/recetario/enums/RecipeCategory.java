@@ -5,5 +5,6 @@ public enum RecipeCategory {
     ALMUERZO,
     MERIENDA,
     BRUNCH,
-    CENA
+    CENA,
+    POSTRE
 }

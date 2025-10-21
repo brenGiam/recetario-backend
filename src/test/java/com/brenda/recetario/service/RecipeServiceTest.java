@@ -127,7 +127,7 @@ public class RecipeServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo("123");
         assertThat(result.getTitle()).isEqualTo("Pizza");
-        assertThat(result.getCategory()).isEqualTo(RecipeCategory.CENA);
+        assertThat(result.getCategories()).containsExactly(RecipeCategory.CENA);
         assertThat(result.getIngredients()).containsExactly("Harina", "Agua");
         assertThat(result.getInstructions()).isEqualTo("Hornear 20 min");
         assertThat(result.getFit()).isTrue();
@@ -171,7 +171,7 @@ public class RecipeServiceTest {
         verify(imageService).uploadImage(image);
         verify(imageService).deleteImage("http://test.com/cheesepizza.jpg");
         assertThat(recipe.getTitle()).isEqualTo("Pizza");
-        assertThat(recipe.getCategory()).isEqualTo(RecipeCategory.CENA);
+        assertThat(recipe.getCategories()).containsExactly(RecipeCategory.CENA);
         assertThat(recipe.getIngredients()).containsExactly("harina", "agua", "queso");
         assertThat(recipe.getInstructions()).isEqualTo("Mezclar y hornear");
         assertThat(recipe.getFit()).isFalse();
@@ -195,7 +195,7 @@ public class RecipeServiceTest {
         verify(imageService, never()).uploadImage(any());
         verify(imageService, never()).deleteImage(any());
         assertThat(recipe.getTitle()).isEqualTo("Pizza");
-        assertThat(recipe.getCategory()).isEqualTo(RecipeCategory.CENA);
+        assertThat(recipe.getCategories()).containsExactly(RecipeCategory.CENA);
         assertThat(recipe.getIngredients()).containsExactly("harina", "agua", "queso");
         assertThat(recipe.getInstructions()).isEqualTo("Mezclar y hornear");
         assertThat(recipe.getFit()).isFalse();
@@ -219,7 +219,7 @@ public class RecipeServiceTest {
         verify(imageService, never()).uploadImage(any());
         verify(imageService, never()).deleteImage(any());
         assertThat(recipe.getTitle()).isEqualTo("Pizza");
-        assertThat(recipe.getCategory()).isEqualTo(RecipeCategory.CENA);
+        assertThat(recipe.getCategories()).containsExactly(RecipeCategory.CENA);
         assertThat(recipe.getIngredients()).containsExactly("harina", "agua", "queso");
         assertThat(recipe.getInstructions()).isEqualTo("Mezclar y hornear");
         assertThat(recipe.getFit()).isFalse();
@@ -341,7 +341,7 @@ public class RecipeServiceTest {
         assertThat(result.getContent()).hasSize(1);
         RecipeFilteredResponseDTO dto = result.getContent().get(0);
         assertThat(dto.getTitle()).isEqualTo("Pizza");
-        assertThat(dto.getCategory()).isEqualTo(RecipeCategory.CENA);
+        assertThat(dto.getCategories()).containsExactly(RecipeCategory.CENA);
         assertThat(dto.getFit()).isTrue();
 
         verify(mongoTemplate).find(any(Query.class), eq(Recipe.class));
@@ -353,6 +353,7 @@ public class RecipeServiceTest {
         // Given
         Recipe recipe = TestDataFactory.createRecipe();
         List<Recipe> recipeList = List.of(recipe);
+        List<RecipeCategory> categories = List.of(RecipeCategory.CENA);
 
         when(mongoTemplate.find(any(Query.class), eq(Recipe.class)))
                 .thenReturn(recipeList);
@@ -360,15 +361,14 @@ public class RecipeServiceTest {
                 .thenReturn(1L);
 
         // When
-        Page<RecipeFilteredResponseDTO> result = recipeService.getAllRecipesWithFilter(RecipeCategory.CENA, null, 0,
-                10);
+        Page<RecipeFilteredResponseDTO> result = recipeService.getAllRecipesWithFilter(categories, null, 0, 10);
 
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
         RecipeFilteredResponseDTO dto = result.getContent().get(0);
         assertThat(dto.getTitle()).isEqualTo("Pizza");
-        assertThat(dto.getCategory()).isEqualTo(RecipeCategory.CENA);
+        assertThat(dto.getCategories()).containsExactly(RecipeCategory.CENA);
         assertThat(dto.getFit()).isTrue();
 
         verify(mongoTemplate).find(any(Query.class), eq(Recipe.class));
@@ -395,7 +395,7 @@ public class RecipeServiceTest {
         assertThat(result.getContent()).hasSize(1);
         RecipeFilteredResponseDTO dto = result.getContent().get(0);
         assertThat(dto.getTitle()).isEqualTo("Pizza");
-        assertThat(dto.getCategory()).isEqualTo(RecipeCategory.CENA);
+        assertThat(dto.getCategories()).containsExactly(RecipeCategory.CENA);
         assertThat(dto.getFit()).isTrue();
 
         verify(mongoTemplate).find(any(Query.class), eq(Recipe.class));
@@ -407,6 +407,7 @@ public class RecipeServiceTest {
         // Given
         Recipe recipe = TestDataFactory.createRecipe();
         List<Recipe> recipeList = List.of(recipe);
+        List<RecipeCategory> categories = List.of(RecipeCategory.CENA);
 
         when(mongoTemplate.find(any(Query.class), eq(Recipe.class)))
                 .thenReturn(recipeList);
@@ -414,15 +415,14 @@ public class RecipeServiceTest {
                 .thenReturn(1L);
 
         // When
-        Page<RecipeFilteredResponseDTO> result = recipeService.getAllRecipesWithFilter(RecipeCategory.CENA, true, 0,
-                10);
+        Page<RecipeFilteredResponseDTO> result = recipeService.getAllRecipesWithFilter(categories, true, 0, 10);
 
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
         RecipeFilteredResponseDTO dto = result.getContent().get(0);
         assertThat(dto.getTitle()).isEqualTo("Pizza");
-        assertThat(dto.getCategory()).isEqualTo(RecipeCategory.CENA);
+        assertThat(dto.getCategories()).containsExactly(RecipeCategory.CENA);
         assertThat(dto.getFit()).isTrue();
 
         verify(mongoTemplate).find(any(Query.class), eq(Recipe.class));

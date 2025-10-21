@@ -44,7 +44,7 @@ public class RecipeService {
         Recipe recipe = new Recipe();
 
         recipe.setTitle(recipeDTO.getTitle());
-        recipe.setCategory(recipeDTO.getCategory());
+        recipe.setCategories(recipeDTO.getCategories());
         recipe.setIngredients(ingredientsNormalitation(recipeDTO.getIngredients()));
         recipe.setInstructions(recipeDTO.getInstructions());
         recipe.setFit(recipeDTO.getFit());
@@ -96,7 +96,7 @@ public class RecipeService {
                 .orElseThrow(() -> new RecipeNotFoundException("La receta especificada no existe."));
 
         recipe.setTitle(recipeDTO.getTitle());
-        recipe.setCategory(recipeDTO.getCategory());
+        recipe.setCategories(recipeDTO.getCategories());
         recipe.setIngredients(ingredientsNormalitation(recipeDTO.getIngredients()));
         recipe.setInstructions(recipeDTO.getInstructions());
         recipe.setFit(recipeDTO.getFit());
@@ -151,15 +151,15 @@ public class RecipeService {
     }
 
     public Page<RecipeFilteredResponseDTO> getAllRecipesWithFilter(
-            RecipeCategory category,
+            List<RecipeCategory> categories,
             Boolean fit,
             int page,
             int size) {
 
         Query query = new Query();
 
-        if (category != null) {
-            query.addCriteria(Criteria.where("category").is(category));
+        if (categories != null && !categories.isEmpty()) {
+            query.addCriteria(Criteria.where("categories").in(categories));
         }
         if (fit != null) {
             query.addCriteria(Criteria.where("fit").is(fit));

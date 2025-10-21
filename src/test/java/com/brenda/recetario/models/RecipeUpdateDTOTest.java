@@ -31,7 +31,7 @@ public class RecipeUpdateDTOTest {
         RecipeUpdateDTO dto = new RecipeUpdateDTO();
         dto.setId("123");
         dto.setTitle(""); // invalid
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of("Harina"));
         dto.setInstructions("Mezclar todo");
         dto.setFit(true);
@@ -53,7 +53,7 @@ public class RecipeUpdateDTOTest {
         RecipeUpdateDTO dto = new RecipeUpdateDTO();
         dto.setId("123");
         dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of()); // empty
         dto.setInstructions("Mezclar todo");
         dto.setFit(true);
@@ -75,7 +75,7 @@ public class RecipeUpdateDTOTest {
         RecipeUpdateDTO dto = new RecipeUpdateDTO();
         dto.setId("123");
         dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of("Harina"));
         dto.setInstructions(""); // empty
         dto.setFit(true);
@@ -91,13 +91,13 @@ public class RecipeUpdateDTOTest {
     }
 
     @Test
-    void whenCategoryIsNull_thenValidationFails() {
+    void whenCategoriesIsNull_thenValidationFails() {
 
-        // Given: a null category DTO
+        // Given: a null categories DTO
         RecipeUpdateDTO dto = new RecipeUpdateDTO();
         dto.setId("123");
         dto.setTitle("Pizza");
-        dto.setCategory(null); // invalid
+        dto.setCategories(null); // invalid
         dto.setIngredients(List.of("Harina"));
         dto.setInstructions("Hornear");
         dto.setFit(true);
@@ -105,11 +105,11 @@ public class RecipeUpdateDTOTest {
         // When: DTO is validated
         Set<ConstraintViolation<RecipeUpdateDTO>> violations = validator.validate(dto);
 
-        // Then: validation should fail because of the null category
+        // Then: validation should fail because the list of categories is null or empty
         assertThat(violations).isNotEmpty();
         assertThat(violations)
-                .anyMatch(v -> v.getPropertyPath().toString().equals("category") &&
-                        v.getConstraintDescriptor().getAnnotation() instanceof jakarta.validation.constraints.NotNull);
+                .anyMatch(v -> v.getPropertyPath().toString().equals("categories") &&
+                        v.getMessage().contains("no debe estar vacío"));
     }
 
     @Test
@@ -119,7 +119,7 @@ public class RecipeUpdateDTOTest {
         RecipeUpdateDTO dto = new RecipeUpdateDTO();
         dto.setId("123");
         dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of("Harina"));
         dto.setInstructions("Hornear");
         dto.setFit(null); // invalid
@@ -140,7 +140,7 @@ public class RecipeUpdateDTOTest {
         // Given: a valid DTO
         RecipeUpdateDTO dto = new RecipeUpdateDTO();
         dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
+        dto.setCategories(List.of(RecipeCategory.CENA));
         dto.setIngredients(List.of("Harina", "Queso"));
         dto.setInstructions("Hornear 20 minutos");
         dto.setFit(true);
