@@ -1,12 +1,14 @@
 package com.brenda.recetario.service;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.core.query.Collation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.brenda.recetario.entity.Recipe;
-import com.brenda.recetario.enums.RecipeCategory;
 import com.brenda.recetario.exceptions.ImageDeletionException;
 import com.brenda.recetario.exceptions.ImageUploadException;
 import com.brenda.recetario.exceptions.InvalidDataException;
@@ -150,56 +151,43 @@ public class RecipeService {
         log.info("RecipeService: Receta eliminada exitosamente: {}", recipe.getTitle());
     }
 
-    public Page<RecipeFilteredResponseDTO> getAllRecipesWithFilter(
-            List<RecipeCategory> categories,
+    public Page<RecipeFilteredResponseDTO> searchRecipes(
+            List<String> categories,
             Boolean fit,
+            String search,
             int page,
             int size) {
 
         Query query = new Query();
+
+        List<Criteria> criteriaList = new ArrayList<>();
 
         if (categories != null && !categories.isEmpty()) {
-            query.addCriteria(Criteria.where("categories").in(categories));
+            criteriaList.add(Criteria.where("categories").in(categories));
         }
+
         if (fit != null) {
-            query.addCriteria(Criteria.where("fit").is(fit));
+            criteriaList.add(Criteria.where("fit").is(fit));
         }
+
+        if (search != null && !search.isBlank()) {
+            Criteria searchCriteria = new Criteria().orOperator(
+                    Criteria.where("title").regex(".*" + search + ".*", "i"),
+                    Criteria.where("ingredients").regex(".*" + search + ".*", "i"));
+            criteriaList.add(searchCriteria);
+        }
+
+        if (!criteriaList.isEmpty()) {
+            query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
+        }
+
+        // Agregar Collation para ignorar acentos
+        query.collation(Collation.of("es").strength(Collation.ComparisonLevel.primary()));
 
         Pageable pageable = PageRequest.of(page, size);
         query.with(pageable);
 
         List<Recipe> recipes = mongoTemplate.find(query, Recipe.class);
-
-        long total = mongoTemplate.count(query.skip(-1).limit(-1), Recipe.class);
-
-        List<RecipeFilteredResponseDTO> dtos = recipes.stream()
-                .map(RecipeFilteredResponseDTO::new)
-                .toList();
-
-        return new PageImpl<>(dtos, pageable, total);
-
-    }
-
-    public Page<RecipeFilteredResponseDTO> getAllRecipesWithIngredients(
-            List<String> ingredients,
-            int page,
-            int size) {
-
-        Query query = new Query();
-
-        if (ingredients != null && !ingredients.isEmpty()) {
-            List<Criteria> regexCriteria = ingredients.stream()
-                    .map(ing -> Criteria.where("ingredients").regex(".*" + ing + ".*", "i"))
-                    .toList();
-
-            query.addCriteria(new Criteria().andOperator(regexCriteria.toArray(new Criteria[0])));
-        }
-
-        Pageable pageable = PageRequest.of(page, size);
-        query.with(pageable);
-
-        List<Recipe> recipes = mongoTemplate.find(query, Recipe.class);
-
         long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Recipe.class);
 
         List<RecipeFilteredResponseDTO> dtos = recipes.stream()

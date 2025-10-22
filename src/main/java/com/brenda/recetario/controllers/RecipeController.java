@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import com.brenda.recetario.entity.Recipe;
-import com.brenda.recetario.enums.RecipeCategory;
 import com.brenda.recetario.models.RecipeCreateDTO;
 import com.brenda.recetario.models.RecipeFilteredResponseDTO;
 import com.brenda.recetario.models.RecipeResponseDTO;
@@ -135,37 +134,18 @@ public class RecipeController {
                 return ResponseEntity.ok(Map.of("message", "Receta eliminada exitosamente"));
         }
 
-        @Operation(summary = "Obtener todas las recetas con o sin filtros", description = "Devuelve una lista paginada de recetas que pueden estar filtradas por categoría y/o si son fit.")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente"),
-                        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
-        })
-        @GetMapping("/filter")
-        public ResponseEntity<?> getRecipesWithFilter(
-                        @Parameter(description = "Categoría de la receta") @RequestParam(required = false) List<RecipeCategory> categories,
-                        @Parameter(description = "Si la receta es fit o no") @RequestParam(required = false) Boolean fit,
-                        @Parameter(description = "Número de página (0 por defecto)") @RequestParam(defaultValue = "0") int page,
-                        @Parameter(description = "Tamaño de página (10 por defecto)") @RequestParam(defaultValue = "10") int size) {
+        @Operation(summary = "Filtrar recetas por categoría, tipo y búsqueda libre", description = "Devuelve recetas que coinciden con categoría, fit y/o una búsqueda por título o ingredientes.")
+        @GetMapping("/search")
+        public ResponseEntity<?> searchRecipes(
+                        @RequestParam(required = false) List<String> categories,
+                        @RequestParam(required = false) Boolean fit,
+                        @RequestParam(required = false) String search,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size) {
 
-                log.info("RecipeController: Obteniendo recetas con filtros -> category: {}, fit: {}", categories, fit);
-                Page<RecipeFilteredResponseDTO> recipes = recipeService.getAllRecipesWithFilter(categories, fit, page,
-                                size);
-                return ResponseEntity.ok(recipes);
-        }
+                log.info("Buscando recetas con filtros - Categorías: {}, Fit: {}, Search: {}", categories, fit, search);
 
-        @Operation(summary = "Obtener todas las recetas con ingredientes específicos", description = "Devuelve una lista paginada de recetas filtradas por ingredientes.")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "Listado obtenido correctamente"),
-                        @ApiResponse(responseCode = "500", description = "Error interno del servidor")
-        })
-        @GetMapping("/ingredients")
-        public ResponseEntity<?> getRecipesByIngredients(
-                        @Parameter(description = "Lista de ingredientes a buscar") @RequestParam List<String> ingredients,
-                        @Parameter(description = "Número de página (0 por defecto)") @RequestParam(defaultValue = "0") int page,
-                        @Parameter(description = "Tamaño de página (10 por defecto)") @RequestParam(defaultValue = "10") int size) {
-
-                log.info("RecipeController: Buscando recetas con ingredientes: {}", ingredients);
-                Page<RecipeFilteredResponseDTO> recipes = recipeService.getAllRecipesWithIngredients(ingredients, page,
+                Page<RecipeFilteredResponseDTO> recipes = recipeService.searchRecipes(categories, fit, search, page,
                                 size);
                 return ResponseEntity.ok(recipes);
         }
