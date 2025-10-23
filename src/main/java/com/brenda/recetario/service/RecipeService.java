@@ -178,13 +178,13 @@ public class RecipeService {
         }
 
         if (search != null && !search.isBlank()) {
-            String[] keywords = search.trim().split("\\s+");
+            String[] keywords = removeAccents(search.toLowerCase().trim()).split("\\s+");
             List<Criteria> keywordCriteria = new ArrayList<>();
 
             for (String keyword : keywords) {
                 keywordCriteria.add(new Criteria().orOperator(
-                        Criteria.where("title").regex(".*" + keyword + ".*", "i"),
-                        Criteria.where("ingredients").regex(".*" + keyword + ".*", "i")));
+                        Criteria.where("normalizedTitle").regex(".*" + keyword + ".*"),
+                        Criteria.where("normalizedIngredients").regex(".*" + keyword + ".*")));
             }
 
             // Recipes that contain all the words:
