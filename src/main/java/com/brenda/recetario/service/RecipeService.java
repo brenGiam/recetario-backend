@@ -4,6 +4,7 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -178,33 +179,42 @@ public class RecipeService {
         }
 
         if (search != null && !search.isBlank()) {
-            String[] keywords = removeAccents(search.toLowerCase().trim()).split("\\s+");
+            // Normalize the search string
+            String normalizedSearch = removeAccents(search.toLowerCase().trim());
+            String[] keywords = normalizedSearch.split("\\s+");
             List<Criteria> keywordCriteria = new ArrayList<>();
 
             for (String keyword : keywords) {
+                // Special characters escaping for regex
+                String escaped = Pattern.quote(keyword);
+
                 keywordCriteria.add(new Criteria().orOperator(
-                        Criteria.where("normalizedTitle").regex(".*" + keyword + ".*"),
-                        Criteria.where("normalizedIngredients").regex(".*" + keyword + ".*")));
+                        Criteria.where("normalizedTitle").regex(".*" + escaped + ".*"),
+                        Criteria.where("normalizedIngredients").regex(".*" + escaped + ".*")));
             }
 
-            // Recipes that contain all the words:
+            // Contain all words:
             criteriaList.add(new Criteria().andOperator(keywordCriteria.toArray(new Criteria[0])));
 
-            // Recipes that contain at least one word:
+            // Match at least one word:
             // criteriaList.add(new Criteria().orOperator(keywordCriteria.toArray(new
             // Criteria[0])));
         }
 
+        // Combine all criteria
         if (!criteriaList.isEmpty()) {
             query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
         }
 
+        // Pagination
         Pageable pageable = PageRequest.of(page, size);
         query.with(pageable);
 
+        // Execute the query
         List<Recipe> recipes = mongoTemplate.find(query, Recipe.class);
         long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Recipe.class);
 
+        // Convert to DTO
         List<RecipeFilteredResponseDTO> dtos = recipes.stream()
                 .map(RecipeFilteredResponseDTO::new)
                 .toList();
