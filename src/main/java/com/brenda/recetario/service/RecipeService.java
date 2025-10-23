@@ -4,7 +4,6 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -179,13 +178,21 @@ public class RecipeService {
         }
 
         if (search != null && !search.isBlank()) {
-            String normalizedSearch = removeAccents(search.toLowerCase());
-            String escaped = Pattern.quote(normalizedSearch);
-            String regex = ".*" + escaped + ".*";
-            Criteria searchCriteria = new Criteria().orOperator(
-                    Criteria.where("normalizedTitle").regex(regex),
-                    Criteria.where("normalizedIngredients").regex(regex));
-            criteriaList.add(searchCriteria);
+            String[] keywords = search.trim().split("\\s+");
+            List<Criteria> keywordCriteria = new ArrayList<>();
+
+            for (String keyword : keywords) {
+                keywordCriteria.add(new Criteria().orOperator(
+                        Criteria.where("title").regex(".*" + keyword + ".*", "i"),
+                        Criteria.where("ingredients").regex(".*" + keyword + ".*", "i")));
+            }
+
+            // Recipes that contain all the words:
+            criteriaList.add(new Criteria().andOperator(keywordCriteria.toArray(new Criteria[0])));
+
+            // Recipes that contain at least one word:
+            // criteriaList.add(new Criteria().orOperator(keywordCriteria.toArray(new
+            // Criteria[0])));
         }
 
         if (!criteriaList.isEmpty()) {
