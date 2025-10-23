@@ -4,11 +4,11 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.mongodb.core.query.Collation;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,9 +46,13 @@ public class RecipeService {
 
         recipe.setTitle(recipeDTO.getTitle());
         recipe.setCategories(recipeDTO.getCategories());
-        recipe.setIngredients(ingredientsNormalitation(recipeDTO.getIngredients()));
+        recipe.setIngredients(recipeDTO.getIngredients());
         recipe.setInstructions(recipeDTO.getInstructions());
         recipe.setFit(recipeDTO.getFit());
+
+        // Normalization to use in search methods
+        recipe.setNormalizedTitle(removeAccents(recipeDTO.getTitle().toLowerCase()));
+        recipe.setNormalizedIngredients(normalizeIngredientsList(recipeDTO.getIngredients()));
 
         String imageUrl = null;
 
@@ -98,9 +102,13 @@ public class RecipeService {
 
         recipe.setTitle(recipeDTO.getTitle());
         recipe.setCategories(recipeDTO.getCategories());
-        recipe.setIngredients(ingredientsNormalitation(recipeDTO.getIngredients()));
+        recipe.setIngredients(recipeDTO.getIngredients());
         recipe.setInstructions(recipeDTO.getInstructions());
         recipe.setFit(recipeDTO.getFit());
+
+        // Normalization to use in search methods
+        recipe.setNormalizedTitle(removeAccents(recipeDTO.getTitle().toLowerCase()));
+        recipe.setNormalizedIngredients(normalizeIngredientsList(recipeDTO.getIngredients()));
 
         try {
             if (image != null && !image.isEmpty()) {
@@ -171,18 +179,18 @@ public class RecipeService {
         }
 
         if (search != null && !search.isBlank()) {
+            String normalizedSearch = removeAccents(search.toLowerCase());
+            String escaped = Pattern.quote(normalizedSearch);
+            String regex = ".*" + escaped + ".*";
             Criteria searchCriteria = new Criteria().orOperator(
-                    Criteria.where("title").regex(".*" + search + ".*", "i"),
-                    Criteria.where("ingredients").regex(".*" + search + ".*", "i"));
+                    Criteria.where("normalizedTitle").regex(regex),
+                    Criteria.where("normalizedIngredients").regex(regex));
             criteriaList.add(searchCriteria);
         }
 
         if (!criteriaList.isEmpty()) {
             query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
         }
-
-        // Agregar Collation para ignorar acentos
-        query.collation(Collation.of("es").strength(Collation.ComparisonLevel.primary()));
 
         Pageable pageable = PageRequest.of(page, size);
         query.with(pageable);
@@ -197,22 +205,24 @@ public class RecipeService {
         return new PageImpl<>(dtos, pageable, total);
     }
 
-    // Auxiliary methods
-    public List<String> ingredientsNormalitation(List<String> ingredients) {
+    // Auxiliary method
+    private List<String> normalizeIngredientsList(List<String> ingredients) {
         if (ingredients == null)
             return List.of();
-
         return ingredients.stream()
-                .filter(Objects::nonNull) // avoid nulls
-                .map(String::trim) // delete extra spaces
+                .filter(Objects::nonNull)
+                .map(String::trim)
                 .map(String::toLowerCase)
                 .map(this::removeAccents)
+                .filter(s -> !s.isBlank())
                 .toList();
     }
 
     private String removeAccents(String input) {
+        if (input == null)
+            return "";
         return Normalizer
                 .normalize(input, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");// remove accents
+                .replaceAll("\\p{M}", ""); // remove accents
     }
 }

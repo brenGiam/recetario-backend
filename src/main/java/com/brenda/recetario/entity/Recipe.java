@@ -29,4 +29,6 @@ public class Recipe {
     @NotNull
     private Boolean fit;
     private String imageUrl;
+    private String normalizedTitle;
+    private List<String> normalizedIngredients;
 }
