@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -40,6 +41,14 @@ public class GlobalExceptionHandler {
         log.error("GlobalExceptionHandler: Error inesperado", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor"));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> handleMaxSizeException(MaxUploadSizeExceededException ex) {
+        log.warn("GlobalExceptionHandler: Archivo demasiado grande - {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE) // 413
+                .body(buildErrorResponse(HttpStatus.PAYLOAD_TOO_LARGE,
+                        "El archivo es demasiado grande. El tamaño máximo permitido es 20MB."));
     }
 
     private Map<String, Object> buildErrorResponse(HttpStatus status, String message) {
