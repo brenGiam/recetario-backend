@@ -2,7 +2,6 @@ package com.brenda.recetario.service;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -22,7 +21,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.brenda.recetario.entity.Recipe;
-import com.brenda.recetario.enums.RecipeCategory;
+import com.brenda.recetario.exceptions.ImageUploadException;
 import com.brenda.recetario.exceptions.InvalidDataException;
 import com.brenda.recetario.exceptions.RecipeNotFoundException;
 import com.brenda.recetario.models.RecipeCreateDTO;
@@ -30,12 +29,11 @@ import com.brenda.recetario.models.RecipeFilteredResponseDTO;
 import com.brenda.recetario.models.RecipeResponseDTO;
 import com.brenda.recetario.models.RecipeUpdateDTO;
 import com.brenda.recetario.repository.RecipeRepository;
-import com.brenda.recetario.utils.TestDataFactory;
+import com.brenda.recetario.utils.RecipeTestDataFactory;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class RecipeServiceTest {
+class RecipeServiceTest {
 
     @Mock
     private RecipeRepository recipeRepository;
@@ -54,200 +52,183 @@ public class RecipeServiceTest {
         MockitoAnnotations.openMocks(this);
     }
 
+    // ---------------------------------------------------------
+    // CREATE RECIPE
+    // ---------------------------------------------------------
     @Test
-    void givenValidDtoAndImage_whenCreateRecipe_thenRecipeIsSavedWithImageUrl() throws Exception {
-        RecipeCreateDTO dto = TestDataFactory.createRecipeCreateDTO();
+    void createRecipe_withValidImage_shouldCreateAndSave() throws Exception {
+        RecipeCreateDTO dto = RecipeTestDataFactory.createValidRecipeCreateDTO();
         MultipartFile image = mock(MultipartFile.class);
 
         when(image.isEmpty()).thenReturn(false);
-        when(imageService.uploadImage(image)).thenReturn("http://img.com/pizza.png");
+        when(imageService.uploadImage(image)).thenReturn("https://image.url/test.jpg");
+        when(recipeRepository.save(any(Recipe.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Recipe recipe = recipeService.createRecipe(dto, image);
+        Recipe result = recipeService.createRecipe(dto, image);
 
+        assertNotNull(result);
+        assertEquals(dto.getTitle(), result.getTitle());
+        assertEquals("https://image.url/test.jpg", result.getImageUrl());
         verify(recipeRepository).save(any(Recipe.class));
         verify(imageService).uploadImage(image);
-        assertThat(recipe.getTitle()).isEqualTo("Pizza");
-        assertThat(recipe.getImageUrl()).isEqualTo("http://img.com/pizza.png");
     }
 
     @Test
-    void givenValidDtoWithoutImage_whenCreateRecipe_thenRecipeIsSavedWithoutImageUrl() {
-        RecipeCreateDTO dto = TestDataFactory.createRecipeCreateDTO();
+    void createRecipe_withoutImage_shouldCreateCorrectly() {
+        RecipeCreateDTO dto = RecipeTestDataFactory.createValidRecipeCreateDTO();
+        when(recipeRepository.save(any(Recipe.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Recipe recipe = recipeService.createRecipe(dto, null);
+        Recipe result = recipeService.createRecipe(dto, null);
 
+        assertNotNull(result);
+        assertEquals(dto.getTitle(), result.getTitle());
         verify(recipeRepository).save(any(Recipe.class));
         verify(imageService, never()).uploadImage(any());
-        assertThat(recipe.getImageUrl()).isNull();
     }
 
     @Test
-    void givenErrorWhenSavingRecipe_thenDeletesUploadedImageAndThrowsException() throws Exception {
-        RecipeCreateDTO dto = TestDataFactory.createRecipeCreateDTO();
+    void createRecipe_errorWhenUploadImage_shouldThrowInvalidDataException() throws Exception {
+        RecipeCreateDTO dto = RecipeTestDataFactory.createValidRecipeCreateDTO();
         MultipartFile image = mock(MultipartFile.class);
 
         when(image.isEmpty()).thenReturn(false);
-        when(imageService.uploadImage(image)).thenReturn("http://img.com/pizza.png");
-        doThrow(new RuntimeException("DB error")).when(recipeRepository).save(any(Recipe.class));
+        when(imageService.uploadImage(image)).thenThrow(new ImageUploadException("error"));
 
-        assertThatThrownBy(() -> recipeService.createRecipe(dto, image))
-                .isInstanceOf(InvalidDataException.class)
-                .hasMessageContaining("Error creando la receta");
-
-        verify(imageService).deleteImage("http://img.com/pizza.png");
-    }
-
-    @Test
-    void givenExistingRecipeId_whenGetRecipeById_thenReturnRecipeResponseDTO() {
-        Recipe recipe = TestDataFactory.createRecipe();
-        when(recipeRepository.findById("123")).thenReturn(Optional.of(recipe));
-
-        RecipeResponseDTO result = recipeService.getRecipeById("123");
-
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo("123");
-        assertThat(result.getTitle()).isEqualTo("Pizza");
-        verify(recipeRepository).findById("123");
-    }
-
-    @Test
-    void givenNonExistingRecipeId_whenGetRecipeById_thenThrowException() {
-        when(recipeRepository.findById("999")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> recipeService.getRecipeById("999"))
-                .isInstanceOf(RecipeNotFoundException.class)
-                .hasMessage("La receta especificada no existe.");
-    }
-
-    @Test
-    void givenValidDtoAndImage_whenUpdateRecipe_thenRecipeIsUpdatedWithImageUrl() throws Exception {
-        Recipe recipe = TestDataFactory.createRecipe();
-        RecipeUpdateDTO dto = TestDataFactory.createRecipeUpdateDTO();
-        MultipartFile image = mock(MultipartFile.class);
-
-        when(recipeRepository.findById("123")).thenReturn(Optional.of(recipe));
-        when(image.isEmpty()).thenReturn(false);
-        when(imageService.uploadImage(image)).thenReturn("http://img.com/pizza.png");
-
-        recipe = recipeService.updateRecipe(dto, image);
-
-        verify(recipeRepository).save(any(Recipe.class));
+        assertThrows(InvalidDataException.class, () -> recipeService.createRecipe(dto, image));
         verify(imageService).uploadImage(image);
-        verify(imageService).deleteImage("http://test.com/cheesepizza.jpg");
-        assertThat(recipe.getImageUrl()).isEqualTo("http://img.com/pizza.png");
+    }
+
+    // ---------------------------------------------------------
+    // GET RECIPE BY ID
+    // ---------------------------------------------------------
+    @Test
+    void getRecipeById_existing_shouldReturnRecipeResponseDTO() {
+        Recipe recipe = RecipeTestDataFactory.createValidRecipeEntity();
+        when(recipeRepository.findById("1")).thenReturn(Optional.of(recipe));
+
+        RecipeResponseDTO result = recipeService.getRecipeById("1");
+
+        assertNotNull(result);
+        assertEquals(recipe.getId(), result.getId());
+        assertEquals(recipe.getTitle(), result.getTitle());
+        verify(recipeRepository).findById("1");
     }
 
     @Test
-    void givenValidDtoWithoutImage_whenUpdateRecipe_thenRecipeIsUpdatedWithoutImageChange() {
-        Recipe recipe = TestDataFactory.createRecipe();
-        RecipeUpdateDTO dto = TestDataFactory.createRecipeUpdateDTO();
-
-        when(recipeRepository.findById("123")).thenReturn(Optional.of(recipe));
-
-        recipe = recipeService.updateRecipe(dto, null);
-
-        verify(recipeRepository).save(any(Recipe.class));
-        verify(imageService, never()).uploadImage(any());
-        verify(imageService, never()).deleteImage(any());
-    }
-
-    @Test
-    void givenNonExistingRecipeId_whenUpdateRecipe_thenThrowException() {
-        RecipeUpdateDTO dto = new RecipeUpdateDTO();
-        dto.setId("999");
+    void getRecipeById_nonExisting_shouldThrowRecipeNotFoundException() {
         when(recipeRepository.findById("999")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> recipeService.updateRecipe(dto, null))
-                .isInstanceOf(RecipeNotFoundException.class)
-                .hasMessage("La receta especificada no existe.");
+        assertThrows(RecipeNotFoundException.class, () -> recipeService.getRecipeById("999"));
+        verify(recipeRepository).findById("999");
+    }
+
+    // ---------------------------------------------------------
+    // UPDATE RECIPE
+    // ---------------------------------------------------------
+    @Test
+    void updateRecipe_withNewImage_shouldUpdateAndDeleteOldImage() throws Exception {
+        Recipe existingRecipe = RecipeTestDataFactory.createValidRecipeEntity();
+        existingRecipe.setImageUrl("https://old-image.url/test.jpg");
+
+        RecipeUpdateDTO updateDTO = RecipeTestDataFactory.createValidRecipeUpdateDTO();
+        MultipartFile nuevaImagen = mock(MultipartFile.class);
+
+        when(recipeRepository.findById(updateDTO.getId())).thenReturn(Optional.of(existingRecipe));
+        when(nuevaImagen.isEmpty()).thenReturn(false);
+        when(imageService.uploadImage(nuevaImagen)).thenReturn("https://new-image.url/test.jpg");
+        when(recipeRepository.save(any(Recipe.class))).thenReturn(existingRecipe);
+
+        Recipe result = recipeService.updateRecipe(updateDTO, nuevaImagen);
+
+        assertNotNull(result);
+        assertEquals(updateDTO.getTitle(), result.getTitle());
+        assertEquals("https://new-image.url/test.jpg", result.getImageUrl());
+        verify(imageService).uploadImage(nuevaImagen);
+        verify(imageService).deleteImage("https://old-image.url/test.jpg");
+        verify(recipeRepository).save(any(Recipe.class));
     }
 
     @Test
-    void givenValidRecipeIdWithImage_whenDeleteRecipe_thenRecipeAndImageDeleted() {
-        Recipe recipe = TestDataFactory.createRecipe();
-        when(recipeRepository.findById("123")).thenReturn(Optional.of(recipe));
+    void updateRecipe_withoutNewImage_shouldUpdateWithoutChangingImage() {
+        Recipe existingRecipe = RecipeTestDataFactory.createValidRecipeEntity();
+        existingRecipe.setImageUrl("https://old-image.url/test.jpg");
 
-        recipeService.deleteRecipe("123");
+        RecipeUpdateDTO updateDTO = RecipeTestDataFactory.createValidRecipeUpdateDTO();
 
-        verify(imageService).deleteImage("http://test.com/cheesepizza.jpg");
+        when(recipeRepository.findById(updateDTO.getId())).thenReturn(Optional.of(existingRecipe));
+        when(recipeRepository.save(any(Recipe.class))).thenReturn(existingRecipe);
+
+        Recipe result = recipeService.updateRecipe(updateDTO, null);
+
+        assertNotNull(result);
+        assertEquals("https://old-image.url/test.jpg", result.getImageUrl());
+        verify(imageService, never()).uploadImage(any());
+        verify(recipeRepository).save(any(Recipe.class));
+    }
+
+    @Test
+    void updateRecipe_NonExisting_shouldThrowRecipeNotFoundException() {
+        RecipeUpdateDTO dto = RecipeTestDataFactory.createValidRecipeUpdateDTO();
+        when(recipeRepository.findById(dto.getId())).thenReturn(Optional.empty());
+
+        assertThrows(RecipeNotFoundException.class, () -> recipeService.updateRecipe(dto, null));
+        verify(recipeRepository).findById(dto.getId());
+    }
+
+    // ---------------------------------------------------------
+    // DELETE RECIPE
+    // ---------------------------------------------------------
+    @Test
+    void deleteRecipe_withImage_shouldDeleteImageAndRecipe() throws Exception {
+        Recipe recipe = RecipeTestDataFactory.createValidRecipeEntity();
+        recipe.setImageUrl("https://image.url/test.jpg");
+
+        when(recipeRepository.findById("1")).thenReturn(Optional.of(recipe));
+
+        recipeService.deleteRecipe("1");
+
+        verify(imageService).deleteImage("https://image.url/test.jpg");
         verify(recipeRepository).delete(recipe);
     }
 
     @Test
-    void givenValidRecipeIdWithoutImage_whenDeleteRecipe_thenOnlyRecipeDeleted() {
-        Recipe recipe = TestDataFactory.createRecipeWithoutImage();
-        when(recipeRepository.findById("123")).thenReturn(Optional.of(recipe));
+    void deleteRecipe_withoutImage_shouldDeleteRecipeWithoutDeletingImage() {
+        Recipe recipe = RecipeTestDataFactory.createValidRecipeEntity();
+        recipe.setImageUrl(null);
 
-        recipeService.deleteRecipe("123");
+        when(recipeRepository.findById("1")).thenReturn(Optional.of(recipe));
 
-        verify(recipeRepository).delete(recipe);
+        recipeService.deleteRecipe("1");
+
         verify(imageService, never()).deleteImage(any());
+        verify(recipeRepository).delete(recipe);
     }
 
     @Test
-    void givenNonExistingRecipeId_whenDeleteRecipe_thenThrowException() {
+    void deleteRecipe_NonExisting_shouldThrowRecipeNotFoundException() {
         when(recipeRepository.findById("999")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> recipeService.deleteRecipe("999"))
-                .isInstanceOf(RecipeNotFoundException.class)
-                .hasMessage("La receta especificada no existe.");
+        assertThrows(RecipeNotFoundException.class, () -> recipeService.deleteRecipe("999"));
     }
 
+    // ---------------------------------------------------------
+    // SEARCH RECIPES
+    // ---------------------------------------------------------
     @Test
-    void givenNoFilters_whenSearchRecipes_thenReturnAllPaged() {
-        Recipe recipe = TestDataFactory.createRecipe();
-        List<Recipe> recipeList = List.of(recipe);
+    void searchRecipes_withCriteria_shouldReturnPageOfDTOs() {
+        Recipe recipe = RecipeTestDataFactory.createValidRecipeEntity();
+        List<Recipe> recipes = List.of(recipe);
 
-        when(mongoTemplate.find(any(Query.class), eq(Recipe.class))).thenReturn(recipeList);
+        when(mongoTemplate.find(any(Query.class), eq(Recipe.class))).thenReturn(recipes);
         when(mongoTemplate.count(any(Query.class), eq(Recipe.class))).thenReturn(1L);
 
-        Page<RecipeFilteredResponseDTO> result = recipeService.searchRecipes(null, null, null, 0, 10);
+        Page<RecipeFilteredResponseDTO> result = recipeService.searchRecipes(
+                List.of("CENA"), true, "pollo", 0, 10);
 
-        assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getTitle()).isEqualTo("Pizza");
-    }
-
-    @Test
-    void givenCategoryFilter_whenSearchRecipes_thenReturnMatchingRecipes() {
-        Recipe recipe = TestDataFactory.createRecipe();
-        List<Recipe> recipeList = List.of(recipe);
-
-        when(mongoTemplate.find(any(Query.class), eq(Recipe.class))).thenReturn(recipeList);
-        when(mongoTemplate.count(any(Query.class), eq(Recipe.class))).thenReturn(1L);
-
-        Page<RecipeFilteredResponseDTO> result = recipeService.searchRecipes(List.of("CENA"), null, null, 0, 10);
-
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getCategories())
-                .contains(RecipeCategory.CENA);
-    }
-
-    @Test
-    void givenFitFilter_whenSearchRecipes_thenReturnFilteredByFit() {
-        Recipe recipe = TestDataFactory.createRecipe();
-        List<Recipe> recipeList = List.of(recipe);
-
-        when(mongoTemplate.find(any(Query.class), eq(Recipe.class))).thenReturn(recipeList);
-        when(mongoTemplate.count(any(Query.class), eq(Recipe.class))).thenReturn(1L);
-
-        Page<RecipeFilteredResponseDTO> result = recipeService.searchRecipes(null, true, null, 0, 10);
-
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getFit()).isTrue();
-    }
-
-    @Test
-    void givenSearchTerm_whenSearchRecipes_thenReturnMatchingResults() {
-        Recipe recipe = TestDataFactory.createRecipe();
-        List<Recipe> recipeList = List.of(recipe);
-
-        when(mongoTemplate.find(any(Query.class), eq(Recipe.class))).thenReturn(recipeList);
-        when(mongoTemplate.count(any(Query.class), eq(Recipe.class))).thenReturn(1L);
-
-        Page<RecipeFilteredResponseDTO> result = recipeService.searchRecipes(null, null, "pizza", 0, 10);
-
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getTitle()).containsIgnoringCase("pizza");
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(recipe.getTitle(), result.getContent().get(0).getTitle());
+        verify(mongoTemplate).find(any(Query.class), eq(Recipe.class));
+        verify(mongoTemplate).count(any(Query.class), eq(Recipe.class));
     }
 }

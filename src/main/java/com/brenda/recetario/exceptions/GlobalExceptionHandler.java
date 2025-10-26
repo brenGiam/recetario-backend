@@ -51,6 +51,13 @@ public class GlobalExceptionHandler {
                         "El archivo es demasiado grande. El tamaño máximo permitido es 20MB."));
     }
 
+    @ExceptionHandler(ImageUploadException.class)
+    public ResponseEntity<?> handleImageUploadException(ImageUploadException ex) {
+        log.warn("Error de carga de imagen: {}", ex.getMessage());
+        return ResponseEntity.badRequest()
+                .body(buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
     private Map<String, Object> buildErrorResponse(HttpStatus status, String message) {
         return Map.of(
                 "timestamp", LocalDateTime.now(),
