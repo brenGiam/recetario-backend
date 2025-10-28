@@ -6,34 +6,72 @@ import org.junit.jupiter.api.Test;
 
 import com.brenda.recetario.entity.Recipe;
 import com.brenda.recetario.enums.RecipeCategory;
+import com.brenda.recetario.utils.RecipeTestDataFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-//No test for default constructors because of Lombok
-public class RecipeResponseDTOTest {
+class RecipeResponseDTOTest {
 
     @Test
-    void constructorShouldMapFieldsCorrectly() {
-        // Given: a valid recipe
-        Recipe recipe = new Recipe();
-        recipe.setId("123");
-        recipe.setTitle("Pizza");
-        recipe.setCategory(RecipeCategory.CENA);
-        recipe.setIngredients(List.of("Harina", "Tomate", "Queso"));
-        recipe.setInstructions("Hornear 20 min");
-        recipe.setFit(true);
-        recipe.setImageUrl("http://image.com/pizza.jpg");
+    void whenConstructedWithValidRecipe_thenFieldsAreMappedCorrectly() {
+        // Given
+        Recipe recipe = RecipeTestDataFactory.createValidRecipeEntity();
 
-        // When: DTO is created
+        // When
         RecipeResponseDTO dto = new RecipeResponseDTO(recipe);
 
-        // Then: response should be correct
-        assertThat(dto.getId()).isEqualTo("123");
-        assertThat(dto.getTitle()).isEqualTo("Pizza");
-        assertThat(dto.getCategory()).isEqualTo(RecipeCategory.CENA);
-        assertThat(dto.getIngredients()).containsExactly("Harina", "Tomate", "Queso");
-        assertThat(dto.getInstructions()).isEqualTo("Hornear 20 min");
-        assertThat(dto.getFit()).isTrue();
-        assertThat(dto.getImageUrl()).isEqualTo("http://image.com/pizza.jpg");
+        // Then
+        assertThat(dto.getId()).isEqualTo(recipe.getId());
+        assertThat(dto.getTitle()).isEqualTo(recipe.getTitle());
+        assertThat(dto.getCategories()).containsExactlyElementsOf(recipe.getCategories());
+        assertThat(dto.getIngredients()).containsExactlyElementsOf(recipe.getIngredients());
+        assertThat(dto.getInstructions()).isEqualTo(recipe.getInstructions());
+        assertThat(dto.getFit()).isEqualTo(recipe.getFit());
+        assertThat(dto.getImageUrl()).isEqualTo(recipe.getImageUrl());
+    }
+
+    @Test
+    void whenUsingNoArgsConstructor_thenFieldsAreNullOrEmpty() {
+        // Given
+        RecipeResponseDTO dto = new RecipeResponseDTO();
+
+        // Then
+        assertThat(dto.getId()).isNull();
+        assertThat(dto.getTitle()).isNull();
+        assertThat(dto.getCategories()).isNull();
+        assertThat(dto.getIngredients()).isNull();
+        assertThat(dto.getInstructions()).isNull();
+        assertThat(dto.getFit()).isNull();
+        assertThat(dto.getImageUrl()).isNull();
+    }
+
+    @Test
+    void whenUsingSetters_thenValuesAreStoredCorrectly() {
+        // Given
+        RecipeResponseDTO dto = new RecipeResponseDTO();
+        dto.setId("456");
+        dto.setTitle("Ensalada César");
+        dto.setCategories(List.of(RecipeCategory.ALMUERZO));
+        dto.setIngredients(List.of("Lechuga", "Pollo", "Croutons"));
+        dto.setInstructions("Mezclar y servir frío");
+        dto.setFit(false);
+        dto.setImageUrl("https://example.com/ensalada.jpg");
+
+        // Then
+        assertThat(dto.getId()).isEqualTo("456");
+        assertThat(dto.getTitle()).isEqualTo("Ensalada César");
+        assertThat(dto.getCategories()).containsExactly(RecipeCategory.ALMUERZO);
+        assertThat(dto.getIngredients()).containsExactly("Lechuga", "Pollo", "Croutons");
+        assertThat(dto.getInstructions()).isEqualTo("Mezclar y servir frío");
+        assertThat(dto.getFit()).isFalse();
+        assertThat(dto.getImageUrl()).isEqualTo("https://example.com/ensalada.jpg");
+    }
+
+    @Test
+    void whenConstructedWithNullRecipe_thenThrowsNullPointerException() {
+        // Expect
+        assertThatThrownBy(() -> new RecipeResponseDTO(null))
+                .isInstanceOf(NullPointerException.class);
     }
 }

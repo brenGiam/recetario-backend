@@ -6,7 +6,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.brenda.recetario.enums.RecipeCategory;
+import com.brenda.recetario.utils.RecipeTestDataFactory;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -14,7 +14,6 @@ import jakarta.validation.Validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-//No test for default constructors because of Lombok
 public class RecipeCreateDTOTest {
 
     private Validator validator;
@@ -26,124 +25,87 @@ public class RecipeCreateDTOTest {
 
     @Test
     void whenTitleIsBlank_thenValidationFails() {
+        RecipeCreateDTO dto = RecipeTestDataFactory.createRecipeCreateDTOWithTitle("");
 
-        // Given: an empty title DTO
-        RecipeCreateDTO dto = new RecipeCreateDTO();
-        dto.setTitle(""); // invalid
-        dto.setCategory(RecipeCategory.CENA);
-        dto.setIngredients(List.of("Harina"));
-        dto.setInstructions("Mezclar todo");
-        dto.setFit(true);
-
-        // When: DTO is validated
         Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
-        // Then: validation should fail because of the empty title
         assertThat(violations).isNotEmpty();
         assertThat(violations)
-                .anyMatch(v -> v.getPropertyPath().toString().equals("title") &&
-                        v.getConstraintDescriptor().getAnnotation() instanceof jakarta.validation.constraints.NotBlank);
+                .anyMatch(v -> v.getPropertyPath().toString().equals("title")
+                        && v.getConstraintDescriptor()
+                                .getAnnotation() instanceof jakarta.validation.constraints.NotBlank);
     }
 
     @Test
     void whenIngredientsIsEmpty_thenValidationFails() {
+        RecipeCreateDTO dto = RecipeTestDataFactory.createRecipeCreateDTOWithIngredients(List.of());
 
-        // Given: an empty ingredients DTO
-        RecipeCreateDTO dto = new RecipeCreateDTO();
-        dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
-        dto.setIngredients(List.of()); // empty
-        dto.setInstructions("Mezclar todo");
-        dto.setFit(true);
-
-        // When: DTO is validated
         Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
-        // Then: validation should fail because of the empty ingredients
         assertThat(violations).isNotEmpty();
         assertThat(violations)
-                .anyMatch(v -> v.getPropertyPath().toString().equals("ingredients") &&
-                        v.getConstraintDescriptor().getAnnotation() instanceof jakarta.validation.constraints.NotEmpty);
+                .anyMatch(v -> v.getPropertyPath().toString().equals("ingredients")
+                        && v.getConstraintDescriptor()
+                                .getAnnotation() instanceof jakarta.validation.constraints.NotEmpty);
     }
 
     @Test
     void whenInstructionsIsBlank_thenValidationFails() {
+        RecipeCreateDTO dto = RecipeTestDataFactory.createRecipeCreateDTOWithInstructions("");
 
-        // Given: a blank instructions DTO
-        RecipeCreateDTO dto = new RecipeCreateDTO();
-        dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
-        dto.setIngredients(List.of("Harina"));
-        dto.setInstructions(""); // blank
-        dto.setFit(true);
-
-        // When: DTO is validated
         Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
-        // Then: validation should fail because of the blank instructions
         assertThat(violations).isNotEmpty();
         assertThat(violations)
-                .anyMatch(v -> v.getPropertyPath().toString().equals("instructions") &&
-                        v.getConstraintDescriptor().getAnnotation() instanceof jakarta.validation.constraints.NotBlank);
+                .anyMatch(v -> v.getPropertyPath().toString().equals("instructions")
+                        && v.getConstraintDescriptor()
+                                .getAnnotation() instanceof jakarta.validation.constraints.NotBlank);
     }
 
     @Test
     void whenCategoryIsNull_thenValidationFails() {
+        RecipeCreateDTO dto = RecipeTestDataFactory.createRecipeCreateDTOWithCategories(null);
 
-        // Given: a null category DTO
-        RecipeCreateDTO dto = new RecipeCreateDTO();
-        dto.setTitle("Pizza");
-        dto.setCategory(null); // invalid
-        dto.setIngredients(List.of("Harina"));
-        dto.setInstructions("Hornear");
-        dto.setFit(true);
-
-        // When: DTO is validated
         Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
-        // Then: validation should fail because of the null category
         assertThat(violations).isNotEmpty();
         assertThat(violations)
-                .anyMatch(v -> v.getPropertyPath().toString().equals("category") &&
-                        v.getConstraintDescriptor().getAnnotation() instanceof jakarta.validation.constraints.NotNull);
+                .anyMatch(v -> v.getPropertyPath().toString().equals("categories")
+                        && v.getMessage().equals("Debe seleccionar al menos una categoría"));
+    }
+
+    @Test
+    void whenCategoryIsEmpty_thenValidationFails() {
+        RecipeCreateDTO dto = RecipeTestDataFactory.createRecipeCreateDTOWithCategories(List.of());
+
+        Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
+
+        assertThat(violations).isNotEmpty();
+        assertThat(violations)
+                .anyMatch(v -> v.getPropertyPath().toString().equals("categories")
+                        && v.getConstraintDescriptor()
+                                .getAnnotation() instanceof jakarta.validation.constraints.NotEmpty);
     }
 
     @Test
     void whenFitIsNull_thenValidationFails() {
+        RecipeCreateDTO dto = RecipeTestDataFactory.createRecipeCreateDTOWithFit(null);
 
-        // Given: a null isFit DTO
-        RecipeCreateDTO dto = new RecipeCreateDTO();
-        dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
-        dto.setIngredients(List.of("Harina"));
-        dto.setInstructions("Hornear");
-        dto.setFit(null); // invalid
-
-        // When: DTO is validated
         Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
-        // Then: validation should fail because of the null isFit
         assertThat(violations).isNotEmpty();
         assertThat(violations)
-                .anyMatch(v -> v.getPropertyPath().toString().equals("fit") &&
-                        v.getConstraintDescriptor().getAnnotation() instanceof jakarta.validation.constraints.NotNull);
+                .anyMatch(v -> v.getPropertyPath().toString().equals("fit")
+                        && v.getConstraintDescriptor()
+                                .getAnnotation() instanceof jakarta.validation.constraints.NotNull);
     }
 
     @Test
     void whenDtoIsValid_thenNoViolations() {
+        RecipeCreateDTO dto = RecipeTestDataFactory.createValidRecipeCreateDTO();
 
-        // Given: a valid DTO
-        RecipeCreateDTO dto = new RecipeCreateDTO();
-        dto.setTitle("Pizza");
-        dto.setCategory(RecipeCategory.CENA);
-        dto.setIngredients(List.of("Harina", "Queso"));
-        dto.setInstructions("Hornear 20 minutos");
-        dto.setFit(true);
-
-        // When: DTO is validated
         Set<ConstraintViolation<RecipeCreateDTO>> violations = validator.validate(dto);
 
-        // Then: validation shouldn't fail
         assertThat(violations).isEmpty();
     }
 }

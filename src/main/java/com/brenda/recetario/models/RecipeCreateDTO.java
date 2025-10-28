@@ -13,8 +13,8 @@ import lombok.Data;
 public class RecipeCreateDTO {
     @NotBlank
     private String title;
-    @NotNull
-    private RecipeCategory category;
+    @NotEmpty(message = "Debe seleccionar al menos una categoría")
+    private List<RecipeCategory> categories;
     @NotEmpty
     private List<String> ingredients;
     @NotBlank

@@ -1,5 +1,7 @@
 package com.brenda.recetario.models;
 
+import java.util.List;
+
 import com.brenda.recetario.entity.Recipe;
 import com.brenda.recetario.enums.RecipeCategory;
 
@@ -11,14 +13,14 @@ import lombok.NoArgsConstructor;
 public class RecipeFilteredResponseDTO {
     private String id;
     private String title;
-    private RecipeCategory category;
+    private List<RecipeCategory> categories;
     private Boolean fit;
     private String imageUrl;
 
     public RecipeFilteredResponseDTO(Recipe recipe) {
         this.id = recipe.getId();
         this.title = recipe.getTitle();
-        this.category = recipe.getCategory();
+        this.categories = recipe.getCategories();
         this.fit = recipe.getFit();
         this.imageUrl = recipe.getImageUrl();
     }

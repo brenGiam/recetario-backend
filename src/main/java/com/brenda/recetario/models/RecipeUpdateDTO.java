@@ -14,8 +14,8 @@ public class RecipeUpdateDTO {
     private String id;
     @NotBlank
     private String title;
-    @NotNull
-    private RecipeCategory category;
+    @NotEmpty
+    private List<RecipeCategory> categories;
     @NotEmpty
     private List<String> ingredients;
     @NotBlank

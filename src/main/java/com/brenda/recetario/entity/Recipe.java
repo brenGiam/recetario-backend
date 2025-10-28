@@ -1,5 +1,6 @@
 package com.brenda.recetario.entity;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
@@ -19,8 +20,8 @@ public class Recipe {
     private String id; // Mongo uses ObjectId, but it is mapped as a String
     @NotBlank
     private String title;
-    @NotNull
-    private RecipeCategory category;
+    @NotEmpty
+    private List<RecipeCategory> categories = new ArrayList<>();
     @NotEmpty
     private List<String> ingredients;
     @NotBlank
@@ -28,4 +29,6 @@ public class Recipe {
     @NotNull
     private Boolean fit;
     private String imageUrl;
+    private String normalizedTitle;
+    private List<String> normalizedIngredients;
 }

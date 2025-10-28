@@ -1,8 +1,10 @@
 package com.brenda.recetario.service;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -16,7 +18,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import com.brenda.recetario.entity.Recipe;
-import com.brenda.recetario.enums.RecipeCategory;
 import com.brenda.recetario.exceptions.ImageDeletionException;
 import com.brenda.recetario.exceptions.ImageUploadException;
 import com.brenda.recetario.exceptions.InvalidDataException;
@@ -44,10 +45,14 @@ public class RecipeService {
         Recipe recipe = new Recipe();
 
         recipe.setTitle(recipeDTO.getTitle());
-        recipe.setCategory(recipeDTO.getCategory());
-        recipe.setIngredients(ingredientsNormalitation(recipeDTO.getIngredients()));
+        recipe.setCategories(recipeDTO.getCategories());
+        recipe.setIngredients(recipeDTO.getIngredients());
         recipe.setInstructions(recipeDTO.getInstructions());
         recipe.setFit(recipeDTO.getFit());
+
+        // Normalization to use in search methods
+        recipe.setNormalizedTitle(removeAccents(recipeDTO.getTitle().toLowerCase()));
+        recipe.setNormalizedIngredients(normalizeIngredientsList(recipeDTO.getIngredients()));
 
         String imageUrl = null;
 
@@ -96,10 +101,14 @@ public class RecipeService {
                 .orElseThrow(() -> new RecipeNotFoundException("La receta especificada no existe."));
 
         recipe.setTitle(recipeDTO.getTitle());
-        recipe.setCategory(recipeDTO.getCategory());
-        recipe.setIngredients(ingredientsNormalitation(recipeDTO.getIngredients()));
+        recipe.setCategories(recipeDTO.getCategories());
+        recipe.setIngredients(recipeDTO.getIngredients());
         recipe.setInstructions(recipeDTO.getInstructions());
         recipe.setFit(recipeDTO.getFit());
+
+        // Normalization to use in search methods
+        recipe.setNormalizedTitle(removeAccents(recipeDTO.getTitle().toLowerCase()));
+        recipe.setNormalizedIngredients(normalizeIngredientsList(recipeDTO.getIngredients()));
 
         try {
             if (image != null && !image.isEmpty()) {
@@ -150,58 +159,62 @@ public class RecipeService {
         log.info("RecipeService: Receta eliminada exitosamente: {}", recipe.getTitle());
     }
 
-    public Page<RecipeFilteredResponseDTO> getAllRecipesWithFilter(
-            RecipeCategory category,
+    public Page<RecipeFilteredResponseDTO> searchRecipes(
+            List<String> categories,
             Boolean fit,
+            String search,
             int page,
             int size) {
 
         Query query = new Query();
 
-        if (category != null) {
-            query.addCriteria(Criteria.where("category").is(category));
+        List<Criteria> criteriaList = new ArrayList<>();
+
+        if (categories != null && !categories.isEmpty()) {
+            criteriaList.add(Criteria.where("categories").in(categories));
         }
+
         if (fit != null) {
-            query.addCriteria(Criteria.where("fit").is(fit));
+            criteriaList.add(Criteria.where("fit").is(fit));
         }
 
+        if (search != null && !search.isBlank()) {
+            // Normalize the search string
+            String normalizedSearch = removeAccents(search.toLowerCase().trim());
+            String[] keywords = normalizedSearch.split("\\s+");
+            List<Criteria> keywordCriteria = new ArrayList<>();
+
+            for (String keyword : keywords) {
+                // Special characters escaping for regex
+                String escaped = Pattern.quote(keyword);
+
+                keywordCriteria.add(new Criteria().orOperator(
+                        Criteria.where("normalizedTitle").regex(".*" + escaped + ".*"),
+                        Criteria.where("normalizedIngredients").regex(".*" + escaped + ".*")));
+            }
+
+            // Contain all words:
+            criteriaList.add(new Criteria().andOperator(keywordCriteria.toArray(new Criteria[0])));
+
+            // Match at least one word:
+            // criteriaList.add(new Criteria().orOperator(keywordCriteria.toArray(new
+            // Criteria[0])));
+        }
+
+        // Combine all criteria
+        if (!criteriaList.isEmpty()) {
+            query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
+        }
+
+        // Pagination
         Pageable pageable = PageRequest.of(page, size);
         query.with(pageable);
 
+        // Execute the query
         List<Recipe> recipes = mongoTemplate.find(query, Recipe.class);
-
-        long total = mongoTemplate.count(query.skip(-1).limit(-1), Recipe.class);
-
-        List<RecipeFilteredResponseDTO> dtos = recipes.stream()
-                .map(RecipeFilteredResponseDTO::new)
-                .toList();
-
-        return new PageImpl<>(dtos, pageable, total);
-
-    }
-
-    public Page<RecipeFilteredResponseDTO> getAllRecipesWithIngredients(
-            List<String> ingredients,
-            int page,
-            int size) {
-
-        Query query = new Query();
-
-        if (ingredients != null && !ingredients.isEmpty()) {
-            List<Criteria> regexCriteria = ingredients.stream()
-                    .map(ing -> Criteria.where("ingredients").regex(".*" + ing + ".*", "i"))
-                    .toList();
-
-            query.addCriteria(new Criteria().andOperator(regexCriteria.toArray(new Criteria[0])));
-        }
-
-        Pageable pageable = PageRequest.of(page, size);
-        query.with(pageable);
-
-        List<Recipe> recipes = mongoTemplate.find(query, Recipe.class);
-
         long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Recipe.class);
 
+        // Convert to DTO
         List<RecipeFilteredResponseDTO> dtos = recipes.stream()
                 .map(RecipeFilteredResponseDTO::new)
                 .toList();
@@ -209,22 +222,24 @@ public class RecipeService {
         return new PageImpl<>(dtos, pageable, total);
     }
 
-    // Auxiliary methods
-    public List<String> ingredientsNormalitation(List<String> ingredients) {
+    // Auxiliary method
+    private List<String> normalizeIngredientsList(List<String> ingredients) {
         if (ingredients == null)
             return List.of();
-
         return ingredients.stream()
-                .filter(Objects::nonNull) // avoid nulls
-                .map(String::trim) // delete extra spaces
+                .filter(Objects::nonNull)
+                .map(String::trim)
                 .map(String::toLowerCase)
                 .map(this::removeAccents)
+                .filter(s -> !s.isBlank())
                 .toList();
     }
 
     private String removeAccents(String input) {
+        if (input == null)
+            return "";
         return Normalizer
                 .normalize(input, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");// remove accents
+                .replaceAll("\\p{M}", ""); // remove accents
     }
 }

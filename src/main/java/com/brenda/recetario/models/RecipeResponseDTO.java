@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 public class RecipeResponseDTO {
     private String id;
     private String title;
-    private RecipeCategory category;
+    private List<RecipeCategory> categories;
     private List<String> ingredients;
     private String instructions;
     private Boolean fit;
@@ -22,7 +22,7 @@ public class RecipeResponseDTO {
     public RecipeResponseDTO(Recipe recipe) {
         this.id = recipe.getId();
         this.title = recipe.getTitle();
-        this.category = recipe.getCategory();
+        this.categories = recipe.getCategories();
         this.ingredients = recipe.getIngredients();
         this.instructions = recipe.getInstructions();
         this.fit = recipe.getFit();
